@@ -67,6 +67,7 @@ CREATE TABLE products_catalogue (
     'value.fields-include' = 'ALL'
 );
 
+-- @SECTION:CORE_VIEWS_START
 -- -----------------------------------------------------------------------------
 -- 2. Deduplication by event_id (KeepFirstRow -> insert-only stream preserving rowtime)
 -- -----------------------------------------------------------------------------
@@ -204,6 +205,7 @@ MATCH_RECOGNIZE (
         E3 AS E3.event_type <> 'purchase',
         P AS P.event_type = 'purchase'
 );
+-- @SECTION:CORE_VIEWS_END
 
 -- -----------------------------------------------------------------------------
 -- 5. Transactional (`exactly-once`) Kafka Sink Tables
@@ -339,6 +341,7 @@ BEGIN
 
 -- (A) Enriched per-click stream (Freshness SLA + sub-second live panels)
 INSERT INTO clicks_enriched_sink
+-- @QUERY:ENRICHED_START
 SELECT
     event_id,
     user_id,
@@ -355,10 +358,13 @@ SELECT
     created_at_ms,
     is_synthetic_late,
     DATE_FORMAT(CURRENT_TIMESTAMP, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS flink_emit_ts
-FROM clicks_enriched;
+FROM clicks_enriched
+-- @QUERY:ENRICHED_END
+;
 
 -- (B) 1-Minute Tumbling Window Metrics
 INSERT INTO minute_metrics_tumbling_sink
+-- @QUERY:TUMBLING_START
 SELECT
     DATE_FORMAT(window_start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_start,
     DATE_FORMAT(window_end, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_end,
@@ -372,10 +378,13 @@ SELECT
 FROM TABLE(
     TUMBLE(TABLE clicks_enriched, DESCRIPTOR(event_ts), INTERVAL '1' MINUTE)
 )
-GROUP BY window_start, window_end;
+GROUP BY window_start, window_end
+-- @QUERY:TUMBLING_END
+;
 
 -- (C) 5-Minute Hopping Window (1-Minute Slide) Rolling Metrics
 INSERT INTO minute_metrics_hopping_sink
+-- @QUERY:HOPPING_START
 SELECT
     DATE_FORMAT(window_start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_start,
     DATE_FORMAT(window_end, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_end,
@@ -394,10 +403,13 @@ SELECT
 FROM TABLE(
     HOP(TABLE clicks_enriched, DESCRIPTOR(event_ts), INTERVAL '1' MINUTE, INTERVAL '5' MINUTE)
 )
-GROUP BY window_start, window_end;
+GROUP BY window_start, window_end
+-- @QUERY:HOPPING_END
+;
 
 -- (D) Flink 2.2 SQL SESSION Window TVF (30-Second Inactivity Gap)
 INSERT INTO user_sessions_sql_sink
+-- @QUERY:SESSIONS_SQL_START
 SELECT
     user_id,
     DATE_FORMAT(window_start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS session_start,
@@ -409,10 +421,13 @@ SELECT
 FROM TABLE(
     SESSION(TABLE clicks_enriched PARTITION BY user_id, DESCRIPTOR(event_ts), INTERVAL '30' SECOND)
 )
-GROUP BY user_id, window_start, window_end;
+GROUP BY user_id, window_start, window_end
+-- @QUERY:SESSIONS_SQL_END
+;
 
 -- (E) MATCH_RECOGNIZE 4-Step Funnel Conversion & Drop-Off per 1m Window
 INSERT INTO funnel_window_metrics_sink
+-- @QUERY:FUNNEL_START
 SELECT
     DATE_FORMAT(window_start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_start,
     DATE_FORMAT(window_end, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_end,
@@ -438,10 +453,13 @@ FROM (
         TUMBLE(TABLE funnel_stage_matches, DESCRIPTOR(match_ts), INTERVAL '1' MINUTE)
     )
     GROUP BY window_start, window_end
-);
+)
+-- @QUERY:FUNNEL_END
+;
 
 -- (F) Window Top-N (Top 10 Products per 1m Window via WindowRank)
 INSERT INTO top_products_window_sink
+-- @QUERY:TOPN_START
 SELECT
     DATE_FORMAT(window_start, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_start,
     DATE_FORMAT(window_end, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_end,
@@ -482,6 +500,8 @@ FROM (
         GROUP BY window_start, window_end, product_id
     )
 )
-WHERE rnk <= 10;
+WHERE rnk <= 10
+-- @QUERY:TOPN_END
+;
 
 END;

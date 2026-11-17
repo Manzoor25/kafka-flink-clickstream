@@ -1,0 +1,56 @@
+{
+  "enriched": {
+    "unique_event_count": 11,
+    "ev4_unit_price_before_promo": 200.00,
+    "ev4_gross_revenue": 400.00,
+    "ev8_unit_price_after_promo": 150.00,
+    "ev8_gross_revenue": 150.00,
+    "total_gross_revenue": 550.00
+  },
+  "tumbling_1m": {
+    "window_start": "2026-01-01T00:00:00.000Z",
+    "window_end": "2026-01-01T00:01:00.000Z",
+    "active_users": 4,
+    "total_events": 11,
+    "views": 4,
+    "add_to_carts": 3,
+    "checkouts": 2,
+    "purchases": 2,
+    "gross_revenue": 550.00
+  },
+  "funnel_1m": {
+    "window_start": "2026-01-01T00:00:00.000Z",
+    "window_end": "2026-01-01T00:01:00.000Z",
+    "step_1_views": 4,
+    "step_2_carts": 3,
+    "step_3_checkouts": 2,
+    "step_4_purchases": 2,
+    "dropoff_view_to_cart_pct": 25.00,
+    "dropoff_cart_to_checkout_pct": 33.33,
+    "dropoff_checkout_to_purchase_pct": 0.00,
+    "overall_conversion_pct": 50.00,
+    "funnel_revenue": 550.00
+  },
+  "top_products_1m": [
+    {
+      "rnk": 1,
+      "product_id": "SKU-1001",
+      "views": 2,
+      "purchases": 2,
+      "revenue": 550.00
+    },
+    {
+      "rnk": 2,
+      "product_id": "SKU-1002",
+      "views": 2,
+      "purchases": 0,
+      "revenue": 0.00
+    }
+  ],
+  "sessions_sql": {
+    "user-1": { "event_count": 4, "purchases": 1, "session_revenue": 400.00 },
+    "user-2": { "event_count": 4, "purchases": 1, "session_revenue": 150.00 },
+    "user-3": { "event_count": 2, "purchases": 0, "session_revenue": 0.00 },
+    "user-4": { "event_count": 1, "purchases": 0, "session_revenue": 0.00 }
+  }
+}
