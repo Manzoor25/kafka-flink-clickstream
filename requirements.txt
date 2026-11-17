@@ -1,7 +1,7 @@
 confluent-kafka==2.16.1
 fastavro==1.13.1
-clickhouse-connect==1.13.0
-boto3==1.44.4
+clickhouse-connect==1.11.0
+boto3==1.43.127
 requests==2.34.2
 pytest>=8.3.0
 ruff>=0.9.0

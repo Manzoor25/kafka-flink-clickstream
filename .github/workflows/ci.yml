@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_full_chaos_and_benchmarks:
+        description: "Run codec benchmarks, all 4 chaos demos, and Grafana screenshot capture"
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  unit-and-flink-fixture-tests:
+    name: Python Lint/Tests & Flink 2.2 MiniCluster Fixture Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies & run Ruff + Pytest unit/contract suite
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          ruff format --check generator benchmarks scripts tests
+          ruff check generator benchmarks scripts tests
+          pytest tests/test_generator_and_recount.py tests/test_sql_and_repo_contracts.py
+
+      - name: Set up Temurin JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "maven"
+
+      - name: Build Flink JAR & execute fixed-file SQL + DataStream MiniCluster tests
+        run: mvn -B -f flink-jobs/pom.xml test package
+
+  e2e-live-smoke:
+    name: Live 9-Container Stack, Recount, Freshness & Chaos Suite
+    runs-on: ubuntu-latest
+    needs: unit-and-flink-fixture-tests
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Boot 9-container stack & deploy Flink 2.2 SQL + DataStream jobs (make up)
+        run: make up PYTHON=python
+
+      - name: Run live workload, 2PC isolation check, batch recount & Grafana freshness SLA (make demo)
+        run: make demo PYTHON=python
+
+      - name: Run live end-to-end CI smoke tests
+        env:
+          REQUIRE_LIVE_STACK: "1"
+        run: pytest tests/test_live_smoke.py
+
+      - name: Run full codec benchmarks, live Grafana screenshot & all 4 failure demos
+        if: ${{ github.event_name == 'workflow_dispatch' || hashFiles('benchmarks/results/producer_benchmark.json') == '' }}
+        run: |
+          pip install playwright==1.51.0
+          playwright install --with-deps chromium
+          python scripts/capture_dashboard.py --out docs/assets/dashboard.png
+          make benchmark PYTHON=python
+          PYTHON_BIN=python make demo-kill-tm
+          PYTHON_BIN=python make demo-spike
+          PYTHON_BIN=python make demo-savepoint
+          PYTHON_BIN=python make demo-reprocess
+
+      - name: Upload measured benchmarks, freshness, chaos reports & dashboard screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clickstream-measured-artifacts
+          if-no-files-found: ignore
+          path: |
+            benchmarks/results/*
+            docs/assets/dashboard.png
+
+      - name: Dump Docker diagnostics on failure
+        if: failure()
+        run: |
+          docker compose ps -a || true
+          docker compose logs --no-color --tail=120 || true
+
+      - name: Tear down stack (make down)
+        if: always()
+        run: make down
