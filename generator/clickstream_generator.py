@@ -73,12 +73,14 @@ class ActiveJourney:
 
 @dataclass
 class ClickstreamSimulator:
-    seed: int = 42
+    seed: int | None = 42
     user_pool_size: int = 600
     duplicate_rate: float = 0.03
     within_watermark_ooo_rate: float = 0.04
     extreme_late_rate: float = 0.015
+    deterministic_ids: bool = False
     rng: random.Random = field(init=False)
+    run_nonce: str = field(init=False)
     active_journeys: list[ActiveJourney] = field(default_factory=list)
     recent_events: collections.deque[dict[str, Any]] = field(default_factory=lambda: collections.deque(maxlen=512))
     products: list[dict[str, Any]] = field(default_factory=lambda: [dict(p) for p in INITIAL_CATALOGUE])
@@ -86,7 +88,9 @@ class ClickstreamSimulator:
     min_non_late_ts_ms: int | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
-        self.rng = random.Random(self.seed)
+        effective_seed = self.seed if self.seed is not None else random.SystemRandom().getrandbits(64)
+        self.rng = random.Random(effective_seed)
+        self.run_nonce = f"{self.rng.getrandbits(16):04x}" if self.deterministic_ids else uuid.uuid4().hex[:6]
         self.product_weights = [float(p["weight"]) for p in self.products]
 
     def _pick_product(self) -> str:
@@ -97,7 +101,7 @@ class ClickstreamSimulator:
         user_num = self.rng.randint(1, self.user_pool_size)
         user_id = f"user-{user_num:04d}"
         sess_suffix = self.rng.getrandbits(32)
-        client_session_id = f"sess-{user_num:04d}-{sess_suffix:08x}"
+        client_session_id = f"sess-{user_num:04d}-{self.run_nonce}-{sess_suffix:08x}"
         device = self.rng.choices(DEVICES, weights=DEVICE_WEIGHTS, k=1)[0]
         product_id = self._pick_product()
         quantity = self.rng.choices([1, 2, 3], weights=[0.78, 0.17, 0.05], k=1)[0]
@@ -114,7 +118,9 @@ class ClickstreamSimulator:
         )
 
     def _deterministic_uuid(self) -> str:
-        return str(uuid.UUID(int=self.rng.getrandbits(128), version=4))
+        if self.deterministic_ids:
+            return str(uuid.UUID(int=self.rng.getrandbits(128), version=4))
+        return str(uuid.uuid4())
 
     def next_event(self, now_ms: int) -> tuple[dict[str, Any], bool]:
         """Generates the next clickstream record. Returns (record, is_duplicate)."""
@@ -475,7 +481,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--compression", default="lz4", choices=["none", "lz4", "zstd", "snappy", "gzip"])
     p.add_argument("--linger-ms", type=int, default=20)
     p.add_argument("--batch-size", type=int, default=65536)
-    p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Optional PRNG seed for journey transitions (default: fresh OS entropy per run)",
+    )
     p.add_argument("--ledger-path", default="", help="Optional JSONL ledger path for deterministic batch recount")
     p.add_argument("--flush-watermark", action="store_true", help="Advance watermarks across all partitions on exit")
     p.add_argument(

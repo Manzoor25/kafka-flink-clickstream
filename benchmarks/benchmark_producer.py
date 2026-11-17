@@ -69,7 +69,7 @@ def ensure_bench_topic(bootstrap_servers: str, topic: str) -> None:
 
 def prebuild_payloads(num_messages: int) -> list[tuple[bytes, bytes]]:
     schema = fastavro.parse_schema(json.loads((ROOT / "schemas" / "click_event.avsc").read_text(encoding="utf-8")))
-    sim = ClickstreamSimulator(seed=2026, user_pool_size=1000, duplicate_rate=0.03)
+    sim = ClickstreamSimulator(seed=2026, user_pool_size=1000, duplicate_rate=0.03, deterministic_ids=True)
     base_ms = int(time.time() * 1000)
     payloads: list[tuple[bytes, bytes]] = []
     for i in range(num_messages):

@@ -193,7 +193,7 @@
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT round(coalesce(quantileTDigest(0.50)(greatest(dateDiff('millisecond', created_at, ch_ingested_at), 1)), 0), 0) AS \"Freshness p50\" FROM analytics.clicks_enriched FINAL WHERE is_synthetic_late = 0 AND ch_ingested_at >= now64(3, 'UTC') - INTERVAL 2 MINUTE",
+          "rawSql": "SELECT round(coalesce(quantileTDigest(0.50)(greatest(dateDiff('millisecond', created_at, ch_ingested_at), 1)), 0), 0) AS \"Freshness p50\" FROM analytics.clicks_enriched FINAL WHERE is_synthetic_late = 0 AND ch_ingested_at >= now64(3, 'UTC') - INTERVAL 45 SECOND",
           "refId": "A"
         }
       ],
@@ -233,7 +233,7 @@
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT round(coalesce(quantileTDigest(0.95)(greatest(dateDiff('millisecond', created_at, ch_ingested_at), 1)), 0), 0) AS \"Freshness p95\" FROM analytics.clicks_enriched FINAL WHERE is_synthetic_late = 0 AND ch_ingested_at >= now64(3, 'UTC') - INTERVAL 2 MINUTE",
+          "rawSql": "SELECT round(coalesce(quantileTDigest(0.95)(greatest(dateDiff('millisecond', created_at, ch_ingested_at), 1)), 0), 0) AS \"Freshness p95\" FROM analytics.clicks_enriched FINAL WHERE is_synthetic_late = 0 AND ch_ingested_at >= now64(3, 'UTC') - INTERVAL 45 SECOND",
           "refId": "A"
         }
       ],

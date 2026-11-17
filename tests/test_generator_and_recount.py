@@ -66,6 +66,20 @@ def test_simulator_respects_funnel_order_and_emits_duplicates() -> None:
     assert any("purchase" in seq for seq in by_session.values())
 
 
+def test_separate_simulator_runs_never_collide_event_ids_by_default() -> None:
+    sim_a = ClickstreamSimulator(seed=42, duplicate_rate=0.0)
+    sim_b = ClickstreamSimulator(seed=42, duplicate_rate=0.0)
+    ids_a = {sim_a.next_event(1_775_000_000_000 + i)[0]["event_id"] for i in range(200)}
+    ids_b = {sim_b.next_event(1_775_000_050_000 + i)[0]["event_id"] for i in range(200)}
+    assert ids_a.isdisjoint(ids_b)
+
+    det_1 = ClickstreamSimulator(seed=2026, duplicate_rate=0.0, deterministic_ids=True)
+    det_2 = ClickstreamSimulator(seed=2026, duplicate_rate=0.0, deterministic_ids=True)
+    assert [det_1.next_event(1_000 + i)[0]["event_id"] for i in range(25)] == [
+        det_2.next_event(1_000 + i)[0]["event_id"] for i in range(25)
+    ]
+
+
 def test_batch_recount_matches_flink_sql_expected_fixture() -> None:
     clicks = [
         json.loads(line)
