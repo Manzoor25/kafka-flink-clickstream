@@ -93,6 +93,9 @@ public class SessionAnalyticsJob {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(parallelism);
+        if (!env.getCheckpointConfig().isCheckpointingEnabled()) {
+            env.enableCheckpointing(2000L);
+        }
 
         OffsetsInitializer offsets = "latest".equalsIgnoreCase(startupMode)
                 ? OffsetsInitializer.latest()
@@ -102,6 +105,8 @@ public class SessionAnalyticsJob {
                 .setBootstrapServers(brokers)
                 .setTopics("clicks.raw.v1")
                 .setGroupId(groupId)
+                .setProperty("commit.offsets.on.checkpoint", "true")
+                .setProperty("isolation.level", "read_committed")
                 .setStartingOffsets(offsets)
                 .setValueOnlyDeserializer(new ConfluentAvroClickDeserializer())
                 .build();

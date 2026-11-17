@@ -21,7 +21,11 @@ def list_running_jobs(flink_url: str) -> dict[str, str]:
 
 def submit_flink_job(cmd_args: list[str]) -> str:
     full_cmd = ["docker", "exec", "flink-jobmanager", "/opt/flink/bin/flink", "run", "-d", *cmd_args]
-    out = subprocess.check_output(full_cmd, text=True, stderr=subprocess.STDOUT)
+    try:
+        out = subprocess.check_output(full_cmd, text=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as exc:
+        print(f"[flink] ERROR (exit={exc.returncode}) output:\n{exc.output}", flush=True)
+        raise
     print(out.strip())
     return out
 

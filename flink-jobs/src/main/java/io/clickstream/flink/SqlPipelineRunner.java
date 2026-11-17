@@ -44,6 +44,9 @@ public class SqlPipelineRunner {
         }
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        if (!env.getCheckpointConfig().isCheckpointingEnabled()) {
+            env.enableCheckpointing(2000L);
+        }
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(
                 env, EnvironmentSettings.newInstance().inStreamingMode().build());
 
