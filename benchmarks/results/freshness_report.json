@@ -1,0 +1,21 @@
+{
+  "active_grafana_api_probe": {
+    "probes_sent": 25,
+    "probes_observed": 25,
+    "watermark_out_of_orderness_ms": 5000,
+    "min_ms": 6827.7,
+    "p50_ms": 10728.7,
+    "p95_ms": 13714.6,
+    "max_ms": 14238.6,
+    "post_watermark_pipeline_overhead_p50_ms": 5728.7,
+    "post_watermark_pipeline_overhead_p95_ms": 8714.6
+  },
+  "clickhouse_population_ingestion": {
+    "sample_count": 17780,
+    "min_ms": 5692.0,
+    "p50_ms": 16435.0,
+    "p95_ms": 27372.0,
+    "p99_ms": 29505.0,
+    "max_ms": 30189.0
+  }
+}

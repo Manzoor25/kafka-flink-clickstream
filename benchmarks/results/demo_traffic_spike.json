@@ -1,0 +1,26 @@
+{
+  "baseline_rate_eps": 450,
+  "spike_rate_eps": 4500,
+  "spike_multiplier": 10.0,
+  "peak_consumer_lag_by_group": {
+    "flink-sql-clickstream-v1": 32276,
+    "flink-ds-sessions-v1": 14066,
+    "ch-clicks-enriched-v1": 5345,
+    "ch-minute-tumbling-v1": 2,
+    "ch-user-sessions-v1": 238,
+    "ch-funnel-metrics-v1": 2
+  },
+  "peak_total_lag": 51929,
+  "peak_flink_backpressure_ratio": 0.482,
+  "peak_flink_busy_ratio": 0.793,
+  "post_recovery_lag_by_group": {
+    "flink-sql-clickstream-v1": 0,
+    "flink-ds-sessions-v1": 0,
+    "ch-clicks-enriched-v1": 0,
+    "ch-minute-tumbling-v1": 2,
+    "ch-user-sessions-v1": 36,
+    "ch-funnel-metrics-v1": 2
+  },
+  "post_recovery_flink_source_lag": 0,
+  "recovered_to_zero_lag": true
+}

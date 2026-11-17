@@ -1,0 +1,22 @@
+{
+  "source": "ledger:/tmp/demo_ledger.jsonl",
+  "batch_recount": {
+    "unique_events": 17755,
+    "active_users": 600,
+    "purchases": 1108,
+    "gross_revenue": 314270.45
+  },
+  "streaming_clickhouse": {
+    "unique_events": 17755,
+    "active_users": 600,
+    "purchases": 1108,
+    "gross_revenue": 314270.45
+  },
+  "diff": {
+    "unique_events": 0,
+    "active_users": 0,
+    "purchases": 0,
+    "gross_revenue": 0.0
+  },
+  "passed": true
+}

@@ -1,0 +1,28 @@
+{
+  "before_wipe": {
+    "clicks_enriched": 72358,
+    "minute_metrics_tumbling": 7,
+    "minute_metrics_hopping": 7,
+    "user_sessions_sql": 2856,
+    "funnel_window_metrics": 7,
+    "top_products_window": 60
+  },
+  "after_truncate": {
+    "clicks_enriched": 0,
+    "minute_metrics_tumbling": 0,
+    "minute_metrics_hopping": 0,
+    "user_sessions_sql": 0,
+    "funnel_window_metrics": 0,
+    "top_products_window": 0
+  },
+  "rebuilt_from_earliest_offset": {
+    "clicks_enriched": 72359,
+    "minute_metrics_tumbling": 8,
+    "minute_metrics_hopping": 10,
+    "user_sessions_sql": 2914,
+    "funnel_window_metrics": 5,
+    "top_products_window": 78
+  },
+  "all_tables_rebuilt": true,
+  "why_kappa_replaces_batch_layer": "Kafka retains the immutable raw clickstream log and compacted versioned product catalogue. Because Flink evaluates deterministic event-time watermarks, KeepFirstRow event_id deduplication, and FOR SYSTEM_TIME AS OF temporal joins, replaying from earliest-offset through the identical SQL DAG reconstructs every historical window, funnel conversion rate, and session summary without maintaining a separate Spark/Hive batch codebase that could drift semantically."
+}

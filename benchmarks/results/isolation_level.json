@@ -1,0 +1,19 @@
+{
+  "flink_checkpoint_mode": "EXACTLY_ONCE",
+  "flink_checkpoint_interval_ms": 2000,
+  "topic": "clicks.enriched.v1",
+  "read_committed_consumer": {
+    "business_records": 18030,
+    "raw_offset_span": 18226,
+    "txn_control_markers": 196
+  },
+  "downstream_isolation_proof": {
+    "read_uncommitted_saw_inflight_records": 1,
+    "read_committed_saw_inflight_records": 0,
+    "read_committed_records_after_abort_then_commit": [
+      "valid-2pc-committed-record"
+    ],
+    "aborted_transaction_hidden": true
+  },
+  "clickhouse_read_committed_configured": true
+}

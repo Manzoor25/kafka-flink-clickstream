@@ -1,0 +1,215 @@
+[
+  {
+    "timestamp_utc": "2026-11-17T12:31:43Z",
+    "consumer_lag": {
+      "flink-sql-clickstream-v1": {
+        "committed_partitions": 12,
+        "total_lag": 72
+      },
+      "flink-ds-sessions-v1": {
+        "committed_partitions": 12,
+        "total_lag": 36
+      },
+      "ch-clicks-enriched-v1": {
+        "committed_partitions": 6,
+        "total_lag": 11
+      },
+      "ch-minute-tumbling-v1": {
+        "committed_partitions": 2,
+        "total_lag": 2
+      },
+      "ch-user-sessions-v1": {
+        "committed_partitions": 6,
+        "total_lag": 33
+      },
+      "ch-funnel-metrics-v1": {
+        "committed_partitions": 2,
+        "total_lag": 2
+      }
+    },
+    "flink_jobs": [
+      {
+        "jid": "991c2033686c4b799d12efb2342ae7cb",
+        "name": "clickstream-datastream-sessions-v1",
+        "state": "RUNNING",
+        "completed_checkpoints": 53,
+        "restored_checkpoints": 0,
+        "failed_checkpoints": 2,
+        "latest_state_size_bytes": 2107272,
+        "latest_end_to_end_duration_ms": 300,
+        "max_backpressure_ratio": 0.0,
+        "max_busy_ratio": 0.0,
+        "vertices": [
+          {
+            "name": "Source: KafkaClicksRawSource",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "DeduplicateByEventId",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "UserSessionWindowAggregator-v1 -> (LateEventSideOutputEnricher -> KafkaLateEventsSink: Writer -> KafkaLateEventsSink: Committer, KafkaSessionsSink: Writer -> KafkaSessionsSink: Committer)",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          }
+        ]
+      },
+      {
+        "jid": "f22f89d5e4d70d9f2c9a4e172ca17ae4",
+        "name": "clickstream-realtime-sql-pipeline",
+        "state": "RUNNING",
+        "completed_checkpoints": 41,
+        "restored_checkpoints": 0,
+        "failed_checkpoints": 5,
+        "latest_state_size_bytes": 14875243,
+        "latest_end_to_end_duration_ms": 283,
+        "max_backpressure_ratio": 0.0,
+        "max_busy_ratio": 0.0,
+        "vertices": [
+          {
+            "name": "Source: clicks_raw[1] -> (Calc[2], Calc[13], Calc[57])",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "Source: products_catalogue[7] -> (Calc[8], Calc[18] -> Calc[19])",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "Deduplicate[4] -> Calc[5]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "TemporalJoin[10] -> (Calc[11] -> clicks_enriched_sink[12]: Writer -> clicks_enriched_sink[12]: Committer, Calc[39])",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "StreamRecordTimestampInserter[41] -> Match[41] -> Calc[42]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "StreamRecordTimestampInserter[43] -> Match[43] -> Calc[44]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "StreamRecordTimestampInserter[46] -> Match[46] -> Calc[47]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "StreamRecordTimestampInserter[49] -> Match[49]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "Calc[51] -> LocalWindowAggregate[52]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "GlobalWindowAggregate[54] -> Calc[55] -> funnel_window_metrics_sink[56]: Writer -> funnel_window_metrics_sink[56]: Committer",
+            "parallelism": 1,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "Deduplicate[15] -> Calc[16]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "TemporalJoin[21] -> (Calc[22] -> LocalWindowAggregate[23], Calc[28] -> LocalWindowAggregate[29], Calc[34])",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "GlobalWindowAggregate[25] -> Calc[26] -> minute_metrics_tumbling_sink[27]: Writer -> minute_metrics_tumbling_sink[27]: Committer",
+            "parallelism": 1,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "GlobalWindowAggregate[31] -> Calc[32] -> minute_metrics_hopping_sink[33]: Writer -> minute_metrics_hopping_sink[33]: Committer",
+            "parallelism": 1,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "WindowAggregate[36] -> Calc[37] -> user_sessions_sql_sink[38]: Writer -> user_sessions_sql_sink[38]: Committer",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "Deduplicate[59] -> Calc[60]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "TemporalJoin[62] -> Calc[63] -> LocalWindowAggregate[64]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "GlobalWindowAggregate[66] -> Calc[67]",
+            "parallelism": 3,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          },
+          {
+            "name": "WindowRank[69] -> Calc[70] -> top_products_window_sink[71]: Writer -> top_products_window_sink[71]: Committer",
+            "parallelism": 1,
+            "backpressure_level": "ok",
+            "max_subtask_bp_ratio": 0.0,
+            "max_subtask_busy_ratio": 0.0
+          }
+        ]
+      }
+    ]
+  }
+]

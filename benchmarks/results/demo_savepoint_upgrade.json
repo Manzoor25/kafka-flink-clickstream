@@ -1,0 +1,10 @@
+{
+  "savepoint_uri": "s3://flink-state/savepoints/savepoint-991c20-d81561cdc375",
+  "upgraded_job_id": "2b20bb38a2035cff17e44901d7fa856c",
+  "restored_from_path": "s3://flink-state/savepoints/savepoint-991c20-d81561cdc375",
+  "is_savepoint": true,
+  "v1_sessions_in_clickhouse": 2278,
+  "v2_sessions_in_clickhouse": 467,
+  "v2_intent_enriched_sessions": 261,
+  "passed": true
+}

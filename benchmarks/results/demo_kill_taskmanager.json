@@ -1,0 +1,28 @@
+{
+  "source": "ledger:/tmp/kill_tm_ledger_49013.jsonl",
+  "batch_recount": {
+    "unique_events": 7912,
+    "active_users": 599,
+    "purchases": 458,
+    "gross_revenue": 120436.95
+  },
+  "streaming_clickhouse": {
+    "unique_events": 7912,
+    "active_users": 599,
+    "purchases": 458,
+    "gross_revenue": 120436.95
+  },
+  "diff": {
+    "unique_events": 0,
+    "active_users": 0,
+    "purchases": 0,
+    "gross_revenue": 0.0
+  },
+  "passed": true,
+  "failover": {
+    "jid": "f22f89d5e4d70d9f2c9a4e172ca17ae4",
+    "restored_checkpoints": 1,
+    "completed_checkpoints": 69,
+    "recovery_sec": 18.98
+  }
+}
