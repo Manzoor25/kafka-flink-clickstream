@@ -18,7 +18,9 @@ def test_flink_sql_pipeline_contracts_and_unique_txn_prefixes() -> None:
     assert "FOR SYSTEM_TIME AS OF c.event_ts" in sql_text
     assert "TUMBLE(TABLE clicks_enriched, DESCRIPTOR(event_ts), INTERVAL '1' MINUTE)" in sql_text
     assert "HOP(TABLE clicks_enriched, DESCRIPTOR(event_ts), INTERVAL '1' MINUTE, INTERVAL '5' MINUTE)" in sql_text
-    assert "SESSION(TABLE clicks_enriched PARTITION BY(user_id), DESCRIPTOR(event_ts), INTERVAL '30' SECOND)" in sql_text
+    assert (
+        "SESSION(TABLE clicks_enriched PARTITION BY(user_id), DESCRIPTOR(event_ts), INTERVAL '30' SECOND)" in sql_text
+    )
     assert "MATCH_RECOGNIZE" in sql_text
     assert "WHERE rnk <= 10" in sql_text
     assert "'properties.isolation.level' = 'read_committed'" in sql_text
