@@ -65,26 +65,7 @@ class SessionAnalyticsJobTest {
                 new ClickEvent("e6", "user-C", "sC", "view", "SKU-1004", 1, "android", "/", t0 + 200_000, t0 + 200_000, false)
         );
 
-        // Punctured 5s bounded-out-of-orderness watermark so instant in-memory collection
-        // advances watermarks deterministically on every record without waiting for 200ms wall-clock timers.
-        WatermarkStrategy<ClickEvent> wm = WatermarkStrategy
-                .<ClickEvent>forGenerator(ctx -> new WatermarkGenerator<>() {
-                    private long maxTs = Long.MIN_VALUE + 5_001L;
-
-                    @Override
-                    public void onEvent(ClickEvent event, long eventTimestamp, WatermarkOutput output) {
-                        if (eventTimestamp > maxTs) {
-                            maxTs = eventTimestamp;
-                            output.emitWatermark(new Watermark(maxTs - 5_000L - 1L));
-                        }
-                    }
-
-                    @Override
-                    public void onPeriodicEmit(WatermarkOutput output) {
-                        output.emitWatermark(new Watermark(maxTs - 5_000L - 1L));
-                    }
-                })
-                .withTimestampAssigner((e, ts) -> e.getEventTsMs());
+        WatermarkStrategy<ClickEvent> wm = puncturedWatermarkStrategy();
 
         DataStream<ClickEvent> src = env.fromData(events).assignTimestampsAndWatermarks(wm);
         SessionAnalyticsJob.PipelineOutputs out = SessionAnalyticsJob.buildTopology(
@@ -127,5 +108,28 @@ class SessionAnalyticsJobTest {
         assertEquals(1, lateAudits.size(), "Expected exactly 1 extreme late event routed to side output");
         assertEquals("e-late-99", lateAudits.get(0).getEventId());
         assertTrue(lateAudits.get(0).getLatenessMs() >= 100_000L);
+    }
+
+    private static WatermarkStrategy<ClickEvent> puncturedWatermarkStrategy() {
+        return WatermarkStrategy
+                .<ClickEvent>forGenerator(ctx -> new PuncturedBoundedGenerator())
+                .withTimestampAssigner((e, ts) -> e.getEventTsMs());
+    }
+
+    private static final class PuncturedBoundedGenerator implements WatermarkGenerator<ClickEvent> {
+        private long maxTs = Long.MIN_VALUE + 5_001L;
+
+        @Override
+        public void onEvent(ClickEvent event, long eventTimestamp, WatermarkOutput output) {
+            if (eventTimestamp > maxTs) {
+                maxTs = eventTimestamp;
+                output.emitWatermark(new Watermark(maxTs - 5_000L - 1L));
+            }
+        }
+
+        @Override
+        public void onPeriodicEmit(WatermarkOutput output) {
+            output.emitWatermark(new Watermark(maxTs - 5_000L - 1L));
+        }
     }
 }
