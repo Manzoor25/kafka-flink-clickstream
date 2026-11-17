@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+
+# Java / Maven
+flink-jobs/target/
+*.class
+*.log
+hs_err_pid*
+
+# Local runtime & environment
+.env
+.runtime/
+tmp/
+*.tmp
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
