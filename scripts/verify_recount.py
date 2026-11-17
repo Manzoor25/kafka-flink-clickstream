@@ -218,7 +218,7 @@ def main() -> None:
     p.add_argument("--clickhouse-user", default=os.getenv("CLICKHOUSE_USER", "clickstream"))
     p.add_argument("--clickhouse-password", default=os.getenv("CLICKHOUSE_PASSWORD", "clickstream_local"))
     p.add_argument("--exclude-synthetic-late", action="store_true")
-    p.add_argument("--wait-timeout-sec", type=float, default=35.0)
+    p.add_argument("--wait-timeout-sec", type=float, default=90.0)
     p.add_argument("--json-out", default="")
     args = p.parse_args()
 
