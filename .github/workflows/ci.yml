@@ -65,6 +65,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install Playwright Chromium for live dashboard verification
+        if: ${{ github.event_name == 'workflow_dispatch' || hashFiles('benchmarks/results/producer_benchmark.json') == '' }}
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
       - name: Boot 9-container stack & deploy Flink 2.2 SQL + DataStream jobs (make up)
         run: make up PYTHON=python
 
@@ -79,8 +85,8 @@ jobs:
       - name: Run full codec benchmarks, live Grafana screenshot & all 4 failure demos
         if: ${{ github.event_name == 'workflow_dispatch' || hashFiles('benchmarks/results/producer_benchmark.json') == '' }}
         run: |
-          pip install playwright
-          playwright install --with-deps chromium
+          python -m generator.clickstream_generator --rate 320 --duration-sec 15 --duplicate-rate 0.03 --ooo-rate 0.04 --late-rate 0.0 --flush-watermark
+          sleep 3
           python scripts/capture_dashboard.py --out docs/assets/dashboard.png
           make benchmark PYTHON=python
           PYTHON_BIN=python make demo-kill-tm

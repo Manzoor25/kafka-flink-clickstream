@@ -51,12 +51,25 @@ GEN_PID=$!
 
 sleep 7
 TARGET_TM=$($PYTHON_BIN - <<'PY'
-import re, requests
+import subprocess, requests
 tms = requests.get("http://localhost:8081/taskmanagers", timeout=10).json().get("taskmanagers", [])
 active = [tm for tm in tms if int(tm.get("slotsNumber", 0)) - int(tm.get("freeSlots", 0)) > 0]
-chosen = sorted(active, key=lambda t: t.get("path", ""), reverse=True)[0] if active else tms[0]
-m = re.search(r"@(flink-tm-\d+)", chosen.get("path", ""))
-print(m.group(1) if m else "flink-tm-2")
+chosen = sorted(
+    active,
+    key=lambda t: int(t.get("slotsNumber", 0)) - int(t.get("freeSlots", 0)),
+    reverse=True,
+)[0] if active else tms[0]
+chosen_info = f"{chosen.get('id', '')} {chosen.get('path', '')}"
+matched = ""
+for cname in ("flink-tm-1", "flink-tm-2"):
+    ip = subprocess.check_output(
+        ["docker", "inspect", "-f", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", cname],
+        text=True,
+    ).strip()
+    if ip and ip in chosen_info:
+        matched = cname
+        break
+print(matched or "flink-tm-1")
 PY
 )
 echo "=== [Demo 1] Injecting fault: docker kill ${TARGET_TM} (hosting active Flink subtasks) ==="
@@ -70,29 +83,57 @@ import json, sys, time, requests
 
 pre_restored = int(sys.argv[1])
 t0 = float(sys.argv[2])
-deadline = time.time() + 90.0
+deadline = time.time() + 100.0
+restored_seen_at = None
+post_restore_ck_base = None
+
 while time.time() < deadline:
     try:
         jobs = requests.get("http://localhost:8081/jobs/overview", timeout=5).json().get("jobs", [])
         running = [j for j in jobs if j["state"] == "RUNNING" and "sql" in j["name"]]
         if running:
             jid = running[0]["jid"]
+            detail = requests.get(f"http://localhost:8081/jobs/{jid}", timeout=5).json()
+            all_vertices_running = bool(detail.get("vertices")) and all(
+                v.get("status") == "RUNNING" for v in detail.get("vertices", [])
+            )
             ck = requests.get(f"http://localhost:8081/jobs/{jid}/checkpoints", timeout=5).json()
             restored = int(ck.get("counts", {}).get("restored", 0))
             completed = int(ck.get("counts", {}).get("completed", 0))
-            if restored > pre_restored:
-                rec_sec = round(time.time() - t0, 2)
-                print(json.dumps({"jid": jid, "restored_checkpoints": restored, "completed_checkpoints": completed, "recovery_sec": rec_sec}))
-                sys.exit(0)
+            if restored > pre_restored and all_vertices_running:
+                if restored_seen_at is None:
+                    restored_seen_at = round(time.time() - t0, 2)
+                    post_restore_ck_base = completed
+                elif completed > post_restore_ck_base:
+                    print(
+                        json.dumps(
+                            {
+                                "jid": jid,
+                                "restored_checkpoints": restored,
+                                "completed_checkpoints": completed,
+                                "recovery_sec": restored_seen_at,
+                            }
+                        )
+                    )
+                    sys.exit(0)
     except Exception:
         pass
     time.sleep(1.0)
-raise SystemExit("Timed out waiting for Flink job to restore from checkpoint")
+raise SystemExit("Timed out waiting for Flink job to restore from checkpoint and complete a new checkpoint")
 PY
 )
 echo "[Demo 1] Flink recovered from MinIO RocksDB checkpoint: $RECOVERY_INFO"
 
 wait "$GEN_PID"
+# Ensure post-recovery watermark advances past the final generator event timestamp
+$PYTHON_BIN -m generator.clickstream_generator \
+  --rate 10 \
+  --max-events 1 \
+  --duration-sec 0 \
+  --duplicate-rate 0.0 \
+  --ooo-rate 0.0 \
+  --late-rate 0.0 \
+  --flush-watermark >/dev/null
 
 echo "=== [Demo 1] Running exact streaming-vs-batch recount check ==="
 $PYTHON_BIN scripts/verify_recount.py \
@@ -112,4 +153,15 @@ PY
 rm -f "$LEDGER_FILE"
 echo "[Demo 1] Restoring ${TARGET_TM} standby TaskManager to full 2-TM redundancy..."
 docker start "$TARGET_TM" >/dev/null
+$PYTHON_BIN - <<'PY'
+import time, requests
+for _ in range(30):
+    try:
+        tms = requests.get("http://localhost:8081/taskmanagers", timeout=5).json().get("taskmanagers", [])
+        if len(tms) >= 2:
+            break
+    except Exception:
+        pass
+    time.sleep(1.0)
+PY
 

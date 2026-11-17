@@ -70,8 +70,8 @@ docker exec flink-jobmanager /opt/flink/bin/flink run -d \
   --txn-prefix "$UPGRADE_TXN"
 
 wait "$GEN_PID"
-echo "[Demo 3] Waiting 31s real-time session inactivity gap so upgraded v2 sessions close naturally..."
-sleep 31
+echo "[Demo 3] Waiting 33s real-time session inactivity gap so upgraded v2 sessions close naturally..."
+sleep 33
 $PYTHON_BIN -m generator.clickstream_generator \
   --rate 10 \
   --max-events 1 \
@@ -80,7 +80,7 @@ $PYTHON_BIN -m generator.clickstream_generator \
   --ooo-rate 0.0 \
   --late-rate 0.0 \
   --flush-watermark >/dev/null
-sleep 4
+sleep 5
 
 echo "=== [Demo 3] Verifying restored savepoint & v1/v2 sessions in ClickHouse ==="
 $PYTHON_BIN - "$SAVEPOINT_URI" "$OUT_JSON" <<'PY'

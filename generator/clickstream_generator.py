@@ -259,6 +259,7 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
 
     start_monotonic = time.monotonic()
     last_cat_update = start_monotonic
+    last_wm_carrier = start_monotonic
     last_report = start_monotonic
 
     total_emitted = 0
@@ -303,6 +304,24 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                     ledger_fp.write(json.dumps({"record_kind": "catalogue", **mutation}) + "\n")
                 price_mutations += 1
                 last_cat_update = slice_start
+
+            if (slice_start - last_wm_carrier) >= 1.0:
+                # Keep all 12 compacted dimension partitions' event-time watermarks advancing continuously
+                for p_idx in range(36):
+                    cat_carrier = {
+                        "product_id": f"SKU-WM-FLUSH-{p_idx:02d}",
+                        "product_name": "Watermark Carrier",
+                        "category": "Internal",
+                        "price": 0.0,
+                        "updated_at_ms": now_ms,
+                    }
+                    producer.produce(
+                        "products.catalogue.v1",
+                        key=cat_carrier["product_id"].encode("utf-8"),
+                        value=encode_confluent_avro(prod_schema_id, prod_schema, cat_carrier),
+                        on_delivery=on_delivery,
+                    )
+                last_wm_carrier = slice_start
 
             for _ in range(batch_target):
                 if args.max_events > 0 and total_emitted >= args.max_events:
