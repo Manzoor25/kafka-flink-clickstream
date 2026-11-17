@@ -15,7 +15,7 @@ on:
 jobs:
   unit-and-flink-fixture-tests:
     name: Python Lint/Tests & Flink 2.2 MiniCluster Fixture Suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout repository
@@ -47,7 +47,7 @@ jobs:
 
   e2e-live-smoke:
     name: Live 9-Container Stack, Recount, Freshness & Chaos Suite
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: unit-and-flink-fixture-tests
     timeout-minutes: 30
     steps:
@@ -79,7 +79,7 @@ jobs:
       - name: Run full codec benchmarks, live Grafana screenshot & all 4 failure demos
         if: ${{ github.event_name == 'workflow_dispatch' || hashFiles('benchmarks/results/producer_benchmark.json') == '' }}
         run: |
-          pip install playwright==1.51.0
+          pip install playwright
           playwright install --with-deps chromium
           python scripts/capture_dashboard.py --out docs/assets/dashboard.png
           make benchmark PYTHON=python
