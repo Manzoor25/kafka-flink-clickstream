@@ -50,10 +50,19 @@ $PYTHON_BIN -m generator.clickstream_generator \
 GEN_PID=$!
 
 sleep 7
-echo "=== [Demo 1] Injecting fault: docker kill flink-tm-2 ==="
+TARGET_TM=$($PYTHON_BIN - <<'PY'
+import re, requests
+tms = requests.get("http://localhost:8081/taskmanagers", timeout=10).json().get("taskmanagers", [])
+active = [tm for tm in tms if int(tm.get("slotsNumber", 0)) - int(tm.get("freeSlots", 0)) > 0]
+chosen = sorted(active, key=lambda t: t.get("path", ""), reverse=True)[0] if active else tms[0]
+m = re.search(r"@(flink-tm-\d+)", chosen.get("path", ""))
+print(m.group(1) if m else "flink-tm-2")
+PY
+)
+echo "=== [Demo 1] Injecting fault: docker kill ${TARGET_TM} (hosting active Flink subtasks) ==="
 KILL_T0=$($PYTHON_BIN -c "import time; print(time.time())")
-docker kill flink-tm-2 >/dev/null
-echo "[Demo 1] flink-tm-2 killed mid-stream! Surviving flink-tm-1 has standby slots to absorb failover..."
+docker kill "$TARGET_TM" >/dev/null
+echo "[Demo 1] ${TARGET_TM} killed mid-stream! Surviving TaskManager has standby slots to absorb failover..."
 
 echo "=== [Demo 1] Waiting for Flink checkpoint failover recovery onto surviving TaskManager ==="
 RECOVERY_INFO=$($PYTHON_BIN - "$PRE_RESTORED" "$KILL_T0" <<'PY'
@@ -101,6 +110,6 @@ print("[Demo 1] PASSED: Streaming totals after TaskManager kill match batch reco
 PY
 
 rm -f "$LEDGER_FILE"
-echo "[Demo 1] Restoring flink-tm-2 standby TaskManager to full 2-TM redundancy..."
-docker start flink-tm-2 >/dev/null
+echo "[Demo 1] Restoring ${TARGET_TM} standby TaskManager to full 2-TM redundancy..."
+docker start "$TARGET_TM" >/dev/null
 

@@ -170,8 +170,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 3000 },
-              { "color": "red", "value": 5000 }
+              { "color": "yellow", "value": 16000 },
+              { "color": "red", "value": 25000 }
             ]
           },
           "unit": "ms"
@@ -210,8 +210,8 @@
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 4000 },
-              { "color": "red", "value": 7000 }
+              { "color": "yellow", "value": 23000 },
+              { "color": "red", "value": 32000 }
             ]
           },
           "unit": "ms"
@@ -339,7 +339,7 @@
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "WITH f AS (SELECT sum(step_1_views) AS s1, sum(step_2_carts) AS s2, sum(step_3_checkouts) AS s3, sum(step_4_purchases) AS s4 FROM analytics.funnel_window_metrics FINAL), live AS (SELECT uniqExactIf(client_session_id, event_type = 'view') AS l1, uniqExactIf(client_session_id, event_type = 'add_to_cart') AS l2, uniqExactIf(client_session_id, event_type = 'checkout') AS l3, uniqExactIf(client_session_id, event_type = 'purchase') AS l4 FROM analytics.clicks_enriched FINAL) SELECT '1. Product View' AS Stage, if((SELECT s1 FROM f) > 0, (SELECT s1 FROM f), (SELECT l1 FROM live)) AS Journeys UNION ALL SELECT '2. Add to Cart', if((SELECT s1 FROM f) > 0, (SELECT s2 FROM f), (SELECT l2 FROM live)) UNION ALL SELECT '3. Checkout', if((SELECT s1 FROM f) > 0, (SELECT s3 FROM f), (SELECT l3 FROM live)) UNION ALL SELECT '4. Purchase', if((SELECT s1 FROM f) > 0, (SELECT s4 FROM f), (SELECT l4 FROM live))",
+          "rawSql": "SELECT Stage, Journeys FROM (WITH f AS (SELECT sum(step_1_views) AS s1, sum(step_2_carts) AS s2, sum(step_3_checkouts) AS s3, sum(step_4_purchases) AS s4 FROM analytics.funnel_window_metrics FINAL), live AS (SELECT uniqExactIf(client_session_id, event_type = 'view') AS l1, uniqExactIf(client_session_id, event_type = 'add_to_cart') AS l2, uniqExactIf(client_session_id, event_type = 'checkout') AS l3, uniqExactIf(client_session_id, event_type = 'purchase') AS l4 FROM analytics.clicks_enriched FINAL) SELECT '1. Product View' AS Stage, if((SELECT s1 FROM f) > 0, (SELECT s1 FROM f), (SELECT l1 FROM live)) AS Journeys UNION ALL SELECT '2. Add to Cart', if((SELECT s1 FROM f) > 0, (SELECT s2 FROM f), (SELECT l2 FROM live)) UNION ALL SELECT '3. Checkout', if((SELECT s1 FROM f) > 0, (SELECT s3 FROM f), (SELECT l3 FROM live)) UNION ALL SELECT '4. Purchase', if((SELECT s1 FROM f) > 0, (SELECT s4 FROM f), (SELECT l4 FROM live))) ORDER BY Stage ASC",
           "refId": "A"
         }
       ],

@@ -492,8 +492,8 @@ FROM (
             window_start,
             window_end,
             product_id,
-            MAX(product_name) AS product_name,
-            MAX(category) AS category,
+            COALESCE(MAX(CASE WHEN product_name <> 'Unknown SKU' THEN product_name END), 'Unknown SKU') AS product_name,
+            COALESCE(MAX(CASE WHEN category <> 'Uncategorized' THEN category END), 'Uncategorized') AS category,
             COUNT(*) FILTER (WHERE event_type = 'view') AS `views`,
             COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchases,
             COALESCE(SUM(gross_revenue), 0.0) AS revenue

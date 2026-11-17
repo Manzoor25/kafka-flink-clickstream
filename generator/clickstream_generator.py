@@ -83,6 +83,7 @@ class ClickstreamSimulator:
     recent_events: collections.deque[dict[str, Any]] = field(default_factory=lambda: collections.deque(maxlen=512))
     products: list[dict[str, Any]] = field(default_factory=lambda: [dict(p) for p in INITIAL_CATALOGUE])
     product_weights: list[float] = field(init=False)
+    min_non_late_ts_ms: int | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         self.rng = random.Random(self.seed)
@@ -143,6 +144,9 @@ class ClickstreamSimulator:
             "purchase": "/checkout/complete",
         }
 
+        if self.min_non_late_ts_ms is None:
+            self.min_non_late_ts_ms = now_ms
+
         event_ts_ms = now_ms
         is_synthetic_late = False
         late_roll = self.rng.random()
@@ -152,7 +156,7 @@ class ClickstreamSimulator:
             is_synthetic_late = True
         elif late_roll < (self.extreme_late_rate + self.within_watermark_ooo_rate):
             # Mild out-of-order arrival within the 5-second bounded-out-of-orderness watermark
-            event_ts_ms = now_ms - self.rng.randint(400, 3_800)
+            event_ts_ms = max(self.min_non_late_ts_ms, now_ms - self.rng.randint(400, 3_800))
 
         record = {
             "event_id": self._deterministic_uuid(),
@@ -344,6 +348,9 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                 time.sleep(slice_sec - spent)
 
         if args.flush_watermark:
+            if args.flush_offset_sec <= 0.0:
+                # Advance real wall-clock past the 5s bounded-out-of-orderness window without emitting future timestamps
+                time.sleep(5.2)
             flush_ts_ms = int(time.time() * 1000) + int(round(args.flush_offset_sec * 1000.0))
             run_tag = uuid.uuid4().hex[:8]
             for i in range(36):
@@ -429,8 +436,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--flush-offset-sec",
         type=float,
-        default=5.5,
-        help="Seconds added to wall-clock time on --flush-watermark (default 5.5s)",
+        default=0.0,
+        help="Optional future offset seconds added on --flush-watermark (0.0 waits 5.2s real wall-clock)",
     )
     return p
 

@@ -104,7 +104,7 @@ def run_single_profile(
         "batch.size": batch_size,
         "acks": "all",
         "enable.idempotence": True,
-        "statistics.interval.ms": 200,
+        "statistics.interval.ms": 50,
         "stats_cb": stats_cb,
         "queue.buffering.max.messages": 500000,
     }
@@ -126,8 +126,10 @@ def run_single_profile(
         k, v = payloads[idx]
         producer.produce(topic, key=k, value=v)
     producer.flush(15)
-    producer.poll(0.25)
-    baseline_txbytes = int(latest_stats.get("txbytes", 0))
+    time.sleep(0.12)
+    producer.poll(0.05)
+    baseline_tx_bytes = int(latest_stats.get("tx_bytes", 0))
+    baseline_tx = int(latest_stats.get("tx", 0))
     raw_bytes_total = sum(len(k) + len(v) for k, v in payloads)
 
     t0 = time.perf_counter()
@@ -149,13 +151,12 @@ def run_single_profile(
             producer.poll(0)
     producer.flush(30)
     elapsed_sec = max(time.perf_counter() - t0, 0.001)
-    # Poll once after statistics interval to ensure final broker txbytes counter is flushed
-    time.sleep(0.25)
+    # Poll once after statistics interval to ensure final broker tx_bytes counter is flushed
+    time.sleep(0.15)
     producer.poll(0.05)
 
-    wire_bytes = max(int(latest_stats.get("txbytes", 0)) - baseline_txbytes, 1)
-    # Sum partition batch counts if reported in librdkafka stats
-    tx_batches = max(int(latest_stats.get("tx", 1)), 1)
+    wire_bytes = max(int(latest_stats.get("tx_bytes", 0)) - baseline_tx_bytes, 1)
+    tx_batches = max(int(latest_stats.get("tx", 1)) - baseline_tx, 1)
 
     ack_latencies_ms.sort()
     eps = len(payloads) / elapsed_sec

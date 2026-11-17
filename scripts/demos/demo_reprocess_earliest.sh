@@ -73,8 +73,27 @@ docker exec flink-jobmanager /opt/flink/bin/flink run -d \
   --consumer-group "flink-sql-kappa-replay-${EPOCH_TAG}" \
   --txn-prefix "sql-kappa-${EPOCH_TAG}"
 
-# Nudge watermarks past historical max event_ts once replay ingests existing partitions
-sleep 8
+# Wait for the replayed SQL job to reach RUNNING and catch up on historical partitions before advancing final watermark
+$PYTHON_BIN - "flink-sql-kappa-replay-${EPOCH_TAG}" <<'PY'
+import os, sys, time, requests
+from scripts.monitor_ops import collect_consumer_lag
+
+grp = sys.argv[1]
+bs = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092,localhost:29093,localhost:29094")
+deadline = time.time() + 60.0
+while time.time() < deadline:
+    try:
+        ov = requests.get("http://localhost:8081/jobs/overview", timeout=5).json().get("jobs", [])
+        sql_jobs = [j for j in ov if j["state"] == "RUNNING" and "sql" in j["name"]]
+        if sql_jobs:
+            lag = collect_consumer_lag(bs, [grp]).get(grp, {})
+            if int(lag.get("committed_partitions", 0)) >= 12 and int(lag.get("total_lag", 999999)) == 0:
+                break
+    except Exception:
+        pass
+    time.sleep(1.5)
+PY
+
 $PYTHON_BIN -m generator.clickstream_generator \
   --rate 10 \
   --max-events 1 \

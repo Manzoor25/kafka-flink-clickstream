@@ -158,6 +158,7 @@ services:
       - "8081:8081"
     environment:
       JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
+      FLINK_PROPERTIES: "cluster.evenly-spread-out-slots: true"
       ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-2.2.1.jar
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-localminio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-localminio123}
@@ -192,6 +193,7 @@ services:
     environment:
       JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
       TASK_MANAGER_NUMBER_OF_TASK_SLOTS: "6"
+      FLINK_PROPERTIES: "cluster.evenly-spread-out-slots: true"
       ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-2.2.1.jar
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-localminio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-localminio123}
@@ -210,6 +212,7 @@ services:
     environment:
       JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
       TASK_MANAGER_NUMBER_OF_TASK_SLOTS: "6"
+      FLINK_PROPERTIES: "cluster.evenly-spread-out-slots: true"
       ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-2.2.1.jar
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-localminio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-localminio123}

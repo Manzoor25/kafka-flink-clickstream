@@ -52,7 +52,7 @@ STOP_OUT=$(docker exec flink-jobmanager /opt/flink/bin/flink stop \
   "$DS_JID" 2>&1)
 echo "$STOP_OUT"
 
-SAVEPOINT_URI=$(echo "$STOP_OUT" | grep -Eo 's3://flink-state/savepoints/[^[:space:].]+' | tail -n 1)
+SAVEPOINT_URI=$(echo "$STOP_OUT" | grep -Eo 's3a?://flink-state/savepoints/[^[:space:]]+' | sed 's/\.$//' | tail -n 1)
 if [[ -z "$SAVEPOINT_URI" ]]; then
   echo "ERROR: Could not parse savepoint URI from flink stop output" >&2
   exit 1
