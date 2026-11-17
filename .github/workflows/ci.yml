@@ -36,7 +36,7 @@ jobs:
           pytest tests/test_generator_and_recount.py tests/test_sql_and_repo_contracts.py
 
       - name: Set up Temurin JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"

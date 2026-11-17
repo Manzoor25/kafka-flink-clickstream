@@ -116,6 +116,7 @@ class FlinkSqlPipelineFixtureTest {
 
         // 5. Verify WindowRank Top-N products
         List<Row> topNRows = collectRows(tEnv, extractSection(pipelineSql, "@QUERY:TOPN_START", "@QUERY:TOPN_END"));
+        topNRows.sort((a, b) -> Integer.compare(((Number) a.getField(2)).intValue(), ((Number) b.getField(2)).intValue()));
         JsonNode expTopN = expected.get("top_products_1m");
         assertEquals(expTopN.size(), topNRows.size());
         for (int i = 0; i < expTopN.size(); i++) {

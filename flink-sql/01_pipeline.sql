@@ -244,7 +244,7 @@ CREATE TABLE minute_metrics_tumbling_sink (
     window_end STRING,
     active_users BIGINT,
     total_events BIGINT,
-    views BIGINT,
+    `views` BIGINT,
     add_to_carts BIGINT,
     checkouts BIGINT,
     purchases BIGINT,
@@ -323,7 +323,7 @@ CREATE TABLE top_products_window_sink (
     product_id STRING,
     product_name STRING,
     category STRING,
-    views BIGINT,
+    `views` BIGINT,
     purchases BIGINT,
     revenue DOUBLE
 ) WITH (
@@ -373,7 +373,7 @@ SELECT
     DATE_FORMAT(window_end, 'yyyy-MM-dd''T''HH:mm:ss.SSS''Z''') AS window_end,
     COUNT(DISTINCT user_id) AS active_users,
     COUNT(*) AS total_events,
-    COUNT(*) FILTER (WHERE event_type = 'view') AS views,
+    COUNT(*) FILTER (WHERE event_type = 'view') AS `views`,
     COUNT(*) FILTER (WHERE event_type = 'add_to_cart') AS add_to_carts,
     COUNT(*) FILTER (WHERE event_type = 'checkout') AS checkouts,
     COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchases,
@@ -422,7 +422,7 @@ SELECT
     COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchases,
     ROUND(COALESCE(SUM(gross_revenue), 0.0), 2) AS session_revenue
 FROM TABLE(
-    SESSION(TABLE clicks_enriched PARTITION BY user_id, DESCRIPTOR(event_ts), INTERVAL '30' SECOND)
+    SESSION(TABLE clicks_enriched PARTITION BY(user_id), DESCRIPTOR(event_ts), INTERVAL '30' SECOND)
 )
 GROUP BY user_id, window_start, window_end
 -- @QUERY:SESSIONS_SQL_END
@@ -470,7 +470,7 @@ SELECT
     product_id,
     product_name,
     category,
-    views,
+    `views`,
     purchases,
     ROUND(revenue, 2) AS revenue
 FROM (
@@ -480,12 +480,12 @@ FROM (
         product_id,
         product_name,
         category,
-        views,
+        `views`,
         purchases,
         revenue,
         ROW_NUMBER() OVER (
             PARTITION BY window_start, window_end
-            ORDER BY revenue DESC, views DESC, product_id ASC
+            ORDER BY revenue DESC, `views` DESC, product_id ASC
         ) AS rnk
     FROM (
         SELECT
@@ -494,7 +494,7 @@ FROM (
             product_id,
             MAX(product_name) AS product_name,
             MAX(category) AS category,
-            COUNT(*) FILTER (WHERE event_type = 'view') AS views,
+            COUNT(*) FILTER (WHERE event_type = 'view') AS `views`,
             COUNT(*) FILTER (WHERE event_type = 'purchase') AS purchases,
             COALESCE(SUM(gross_revenue), 0.0) AS revenue
         FROM TABLE(

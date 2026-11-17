@@ -13,6 +13,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.flink.api.common.eventtime.Watermark;
+import org.apache.flink.api.common.eventtime.WatermarkGenerator;
+import org.apache.flink.api.common.eventtime.WatermarkOutput;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -62,8 +65,25 @@ class SessionAnalyticsJobTest {
                 new ClickEvent("e6", "user-C", "sC", "view", "SKU-1004", 1, "android", "/", t0 + 200_000, t0 + 200_000, false)
         );
 
+        // Punctured 5s bounded-out-of-orderness watermark so instant in-memory collection
+        // advances watermarks deterministically on every record without waiting for 200ms wall-clock timers.
         WatermarkStrategy<ClickEvent> wm = WatermarkStrategy
-                .<ClickEvent>forBoundedOutOfOrderness(Duration.ofSeconds(5))
+                .<ClickEvent>forGenerator(ctx -> new WatermarkGenerator<>() {
+                    private long maxTs = Long.MIN_VALUE + 5_001L;
+
+                    @Override
+                    public void onEvent(ClickEvent event, long eventTimestamp, WatermarkOutput output) {
+                        if (eventTimestamp > maxTs) {
+                            maxTs = eventTimestamp;
+                            output.emitWatermark(new Watermark(maxTs - 5_000L - 1L));
+                        }
+                    }
+
+                    @Override
+                    public void onPeriodicEmit(WatermarkOutput output) {
+                        output.emitWatermark(new Watermark(maxTs - 5_000L - 1L));
+                    }
+                })
                 .withTimestampAssigner((e, ts) -> e.getEventTsMs());
 
         DataStream<ClickEvent> src = env.fromData(events).assignTimestampsAndWatermarks(wm);
