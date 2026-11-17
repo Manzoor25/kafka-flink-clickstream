@@ -144,9 +144,9 @@ def run_active_dashboard_probe(
             next_probe_at = now_perf + 0.45
 
         if now_perf >= next_wm_nudge:
-            # Real wall-clock timestamp (zero future offset) keeps watermarks advancing across all 12 partitions
+            # Real wall-clock timestamp (zero future offset) explicitly addressed to all 12 partitions (0..11)
             wm_ts = int(time.time() * 1000)
-            for p_idx in range(36):
+            for p_idx in range(12):
                 cat_wm = {
                     "product_id": f"SKU-WM-FLUSH-{p_idx:02d}",
                     "product_name": "Watermark Carrier",
@@ -156,6 +156,7 @@ def run_active_dashboard_probe(
                 }
                 producer.produce(
                     "products.catalogue.v1",
+                    partition=p_idx,
                     key=cat_wm["product_id"].encode("utf-8"),
                     value=encode_confluent_avro(prod_schema_id, prod_schema, cat_wm),
                 )
@@ -174,6 +175,7 @@ def run_active_dashboard_probe(
                 }
                 producer.produce(
                     "clicks.raw.v1",
+                    partition=p_idx,
                     key=c_wm["user_id"].encode("utf-8"),
                     value=encode_confluent_avro(click_schema_id, click_schema, c_wm),
                 )

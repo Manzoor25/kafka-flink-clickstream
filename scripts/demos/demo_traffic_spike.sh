@@ -65,7 +65,7 @@ for snap in series:
 bs = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092,localhost:29093,localhost:29094")
 final_lag = {}
 raw_flink_lag = 999999
-for _ in range(20):
+for _ in range(70):
     lag_now = collect_consumer_lag(bs, MONITORED_GROUPS)
     final_lag = {g: v["total_lag"] for g, v in lag_now.items()}
     # Non-transactional source groups (flink-*) drain to exact 0; transactional 2PC topics

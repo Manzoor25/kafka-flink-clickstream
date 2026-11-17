@@ -307,7 +307,7 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
 
             if (slice_start - last_wm_carrier) >= 1.0:
                 # Keep all 12 compacted dimension partitions' event-time watermarks advancing continuously
-                for p_idx in range(36):
+                for p_idx in range(12):
                     cat_carrier = {
                         "product_id": f"SKU-WM-FLUSH-{p_idx:02d}",
                         "product_name": "Watermark Carrier",
@@ -317,6 +317,7 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                     }
                     producer.produce(
                         "products.catalogue.v1",
+                        partition=p_idx,
                         key=cat_carrier["product_id"].encode("utf-8"),
                         value=encode_confluent_avro(prod_schema_id, prod_schema, cat_carrier),
                         on_delivery=on_delivery,
@@ -372,9 +373,9 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                 time.sleep(5.2)
             flush_ts_ms = int(time.time() * 1000) + int(round(args.flush_offset_sec * 1000.0))
             run_tag = uuid.uuid4().hex[:8]
-            for i in range(36):
+            for p_idx in range(12):
                 cat_sentinel = {
-                    "product_id": f"SKU-WM-FLUSH-{i:02d}",
+                    "product_id": f"SKU-WM-FLUSH-{p_idx:02d}",
                     "product_name": "Watermark Carrier",
                     "category": "Internal",
                     "price": 0.0,
@@ -382,13 +383,14 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                 }
                 producer.produce(
                     "products.catalogue.v1",
+                    partition=p_idx,
                     key=cat_sentinel["product_id"].encode("utf-8"),
                     value=encode_confluent_avro(prod_schema_id, prod_schema, cat_sentinel),
                 )
                 click_sentinel = {
-                    "event_id": f"wm-flush-{run_tag}-{i:02d}",
-                    "user_id": f"wm-user-{i:02d}",
-                    "client_session_id": f"wm-sess-{i:02d}",
+                    "event_id": f"wm-flush-{run_tag}-{p_idx:02d}",
+                    "user_id": f"wm-user-{p_idx:02d}",
+                    "client_session_id": f"wm-sess-{p_idx:02d}",
                     "event_type": "view",
                     "product_id": "SKU-1001",
                     "quantity": 1,
@@ -400,6 +402,7 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                 }
                 producer.produce(
                     args.topic,
+                    partition=p_idx,
                     key=click_sentinel["user_id"].encode("utf-8"),
                     value=encode_confluent_avro(click_schema_id, click_schema, click_sentinel),
                 )
