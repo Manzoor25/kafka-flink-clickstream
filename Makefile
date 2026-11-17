@@ -1,5 +1,6 @@
 SHELL := /bin/bash
 PYTHON ?= python3
+export PYTHON_BIN := $(PYTHON)
 export PYTHONPATH := $(CURDIR)
 
 .PHONY: help up down demo test test-unit test-java test-smoke benchmark freshness ops demo-kill-tm demo-spike demo-savepoint demo-reprocess clean

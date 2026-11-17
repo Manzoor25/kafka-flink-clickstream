@@ -139,10 +139,13 @@ def drain_avro_topic(bootstrap_servers: str, topic: str, schema_path: Path) -> l
             return rows
         c.assign(active_parts)
         done: set[int] = set()
-        while len(done) < len(active_parts):
+        empty_polls = 0
+        while len(done) < len(active_parts) and empty_polls < 6:
             msg = c.poll(1.0)
             if msg is None:
-                break
+                empty_polls += 1
+                continue
+            empty_polls = 0
             if msg.error():
                 continue
             val = msg.value()
