@@ -1,0 +1,23 @@
+-- =============================================================================
+-- Kappa Architecture Full Historical Replay Launcher Notes
+-- =============================================================================
+-- Failure Demo #4 (`scripts/demos/demo_reprocess_earliest.sh`) invokes
+-- `SqlPipelineRunner` against `flink-sql/01_pipeline.sql` with:
+--   --pipeline-name clickstream-kappa-reprocess-earliest
+--   --scan-startup-mode earliest-offset
+--   --consumer-group flink-sql-kappa-replay-<epoch>
+--   --txn-prefix sql-kappa-replay-<epoch>
+--
+-- Why a single SQL file (`01_pipeline.sql`) instead of a separate batch SQL query:
+--   In a Lambda architecture, teams maintain two divergent codebases (e.g. Flink
+--   for real-time speed views + Spark/Hive nightly batch SQL to "fix" drift),
+--   doubling testing burden and introducing subtle semantic skew in session gaps,
+--   temporal price joins, and MATCH_RECOGNIZE funnel logic.
+--
+--   In this Kappa architecture, Kafka retains the immutable raw clickstream
+--   (`clicks.raw.v1`) and compacted versioned product catalogue
+--   (`products.catalogue.v1`). Re-running the exact same event-time Flink SQL
+--   DAG from `earliest-offset` deterministically reconstructs every enriched
+--   click, tumbling/hopping aggregate, session summary, funnel conversion step,
+--   and Top-N ranking without maintaining a separate batch layer.
+-- =============================================================================
