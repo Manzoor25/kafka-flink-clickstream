@@ -28,14 +28,30 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 OUT_JSON="$ROOT_DIR/benchmarks/results/demo_reprocess_earliest.json"
 mkdir -p "$ROOT_DIR/benchmarks/results"
 
-echo "=== [Demo 4] Recording pre-wipe ClickHouse table counts & cancelling SQL job ==="
+echo "=== [Demo 4] Gracefully stopping SQL job (committing 2PC sinks) & truncating serving tables ==="
 PRE_COUNTS=$($PYTHON_BIN - <<'PY'
-import json, os, requests, subprocess, clickhouse_connect
+import json, os, time, requests, subprocess, clickhouse_connect
 
 ov = requests.get("http://localhost:8081/jobs/overview", timeout=10).json()["jobs"]
 for j in ov:
     if j["state"] == "RUNNING" and "sql" in j["name"]:
-        subprocess.run(["docker", "exec", "flink-jobmanager", "/opt/flink/bin/flink", "cancel", j["jid"]], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                "flink-jobmanager",
+                "/opt/flink/bin/flink",
+                "stop",
+                "--savepointPath",
+                "s3://flink-state/savepoints",
+                j["jid"],
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+
+# Allow ClickHouse Kafka Engine consumers to flush final committed 2PC batch from stopped job before truncating
+time.sleep(3.0)
 
 ch = clickhouse_connect.get_client(
     host=os.getenv("CLICKHOUSE_HOST", "localhost"),
@@ -73,21 +89,24 @@ docker exec flink-jobmanager /opt/flink/bin/flink run -d \
   --consumer-group "flink-sql-kappa-replay-${EPOCH_TAG}" \
   --txn-prefix "sql-kappa-${EPOCH_TAG}"
 
-# Wait for the replayed SQL job to reach RUNNING and catch up on historical partitions before advancing final watermark
+# Wait for the replayed SQL job to reach RUNNING, complete >=1 checkpoint, and catch up on historical partitions
 $PYTHON_BIN - "flink-sql-kappa-replay-${EPOCH_TAG}" <<'PY'
 import os, sys, time, requests
 from scripts.monitor_ops import collect_consumer_lag
 
 grp = sys.argv[1]
 bs = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092,localhost:29093,localhost:29094")
-deadline = time.time() + 60.0
+deadline = time.time() + 150.0
 while time.time() < deadline:
     try:
         ov = requests.get("http://localhost:8081/jobs/overview", timeout=5).json().get("jobs", [])
         sql_jobs = [j for j in ov if j["state"] == "RUNNING" and "sql" in j["name"]]
         if sql_jobs:
+            jid = sql_jobs[0]["jid"]
+            ck = requests.get(f"http://localhost:8081/jobs/{jid}/checkpoints", timeout=5).json()
+            completed = int(ck.get("counts", {}).get("completed", 0))
             lag = collect_consumer_lag(bs, [grp]).get(grp, {})
-            if int(lag.get("committed_partitions", 0)) >= 12 and int(lag.get("total_lag", 999999)) == 0:
+            if completed >= 1 and int(lag.get("committed_partitions", 0)) >= 12 and int(lag.get("total_lag", 999999)) == 0:
                 break
     except Exception:
         pass
@@ -107,7 +126,7 @@ $PYTHON_BIN -m generator.clickstream_generator \
 echo "=== [Demo 4] Verifying full metric reconstruction & exact raw-Kafka batch recount ==="
 $PYTHON_BIN scripts/verify_recount.py \
   --exclude-synthetic-late \
-  --wait-timeout-sec 60 \
+  --wait-timeout-sec 120 \
   --json-out "$ROOT_DIR/benchmarks/results/demo_reprocess_recount.json"
 
 $PYTHON_BIN - "$PRE_COUNTS" "$OUT_JSON" <<'PY'

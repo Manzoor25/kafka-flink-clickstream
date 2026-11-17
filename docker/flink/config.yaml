@@ -58,6 +58,10 @@ execution:
     min-pause: 500ms
     mode: EXACTLY_ONCE
     timeout: 2min
+    tolerable-failed-checkpoints: 5
+    unaligned:
+      enabled: true
+    aligned-checkpoint-timeout: 5s
     num-retained: 3
     externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
 

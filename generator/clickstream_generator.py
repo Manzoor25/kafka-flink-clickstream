@@ -259,7 +259,8 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
 
     start_monotonic = time.monotonic()
     last_cat_update = start_monotonic
-    last_wm_carrier = start_monotonic
+    last_wm_carrier = start_monotonic - 1.0
+    wm_carrier_seq = 0
     last_report = start_monotonic
 
     total_emitted = 0
@@ -306,7 +307,8 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                 last_cat_update = slice_start
 
             if (slice_start - last_wm_carrier) >= 1.0:
-                # Keep all 12 compacted dimension partitions' event-time watermarks advancing continuously
+                # Keep all 12 partitions' event-time watermarks advancing continuously on both inputs
+                wm_tag = uuid.uuid4().hex[:6]
                 for p_idx in range(12):
                     cat_carrier = {
                         "product_id": f"SKU-WM-FLUSH-{p_idx:02d}",
@@ -322,6 +324,27 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
                         value=encode_confluent_avro(prod_schema_id, prod_schema, cat_carrier),
                         on_delivery=on_delivery,
                     )
+                    click_carrier = {
+                        "event_id": f"wm-flush-hb-{wm_tag}-{wm_carrier_seq}-{p_idx:02d}",
+                        "user_id": f"wm-user-{p_idx:02d}",
+                        "client_session_id": f"wm-sess-{p_idx:02d}",
+                        "event_type": "view",
+                        "product_id": "SKU-1001",
+                        "quantity": 1,
+                        "device": "web",
+                        "page_url": "/_wm",
+                        "event_ts_ms": now_ms,
+                        "created_at_ms": now_ms,
+                        "is_synthetic_late": False,
+                    }
+                    producer.produce(
+                        args.topic,
+                        partition=p_idx,
+                        key=click_carrier["user_id"].encode("utf-8"),
+                        value=encode_confluent_avro(click_schema_id, click_schema, click_carrier),
+                        on_delivery=on_delivery,
+                    )
+                wm_carrier_seq += 1
                 last_wm_carrier = slice_start
 
             for _ in range(batch_target):

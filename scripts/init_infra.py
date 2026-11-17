@@ -218,6 +218,22 @@ def seed_product_catalogue(bootstrap_servers: str, product_schema_id: int) -> No
             key=item["product_id"].encode("utf-8"),
             value=payload,
         )
+    # Seed explicit watermark carriers across all 12 partitions at current wall-clock so no partition starts empty
+    now_ms = int(time.time() * 1000)
+    for p_idx in range(12):
+        wm_rec = {
+            "product_id": f"SKU-WM-FLUSH-{p_idx:02d}",
+            "product_name": "Watermark Carrier",
+            "category": "Internal",
+            "price": 0.0,
+            "updated_at_ms": now_ms,
+        }
+        producer.produce(
+            "products.catalogue.v1",
+            partition=p_idx,
+            key=wm_rec["product_id"].encode("utf-8"),
+            value=encode_confluent_avro(product_schema_id, parsed, wm_rec),
+        )
     producer.flush(15)
     print(f"[catalogue] Seeded {len(INITIAL_CATALOGUE)} products into compacted topic products.catalogue.v1")
 

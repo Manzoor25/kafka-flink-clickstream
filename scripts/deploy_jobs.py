@@ -30,14 +30,16 @@ def submit_flink_job(cmd_args: list[str]) -> str:
     return out
 
 
-def wait_for_completed_checkpoint(flink_url: str, jid: str, name: str, timeout_sec: int = 90) -> dict[str, Any]:
+def wait_for_completed_checkpoint(
+    flink_url: str, jid: str, name: str, min_completed: int = 2, timeout_sec: int = 90
+) -> dict[str, Any]:
     deadline = time.monotonic() + timeout_sec
     while time.monotonic() < deadline:
         resp = requests.get(f"{flink_url}/jobs/{jid}/checkpoints", timeout=10)
         if resp.status_code == 200:
             data = resp.json()
             completed = int(data.get("counts", {}).get("completed", 0))
-            if completed >= 1:
+            if completed >= min_completed:
                 latest = data.get("latest", {}).get("completed", {}) or {}
                 print(
                     f"[flink] Job {name} ({jid}) RUNNING | completed_checkpoints={completed} "
