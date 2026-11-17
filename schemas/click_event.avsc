@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "ClickEvent",
+  "namespace": "io.clickstream.avro",
+  "doc": "Raw e-commerce clickstream event published by edge collectors.",
+  "fields": [
+    {"name": "event_id", "type": "string", "doc": "Globally unique UUIDv4 for idempotency and deduplication"},
+    {"name": "user_id", "type": "string", "doc": "Authenticated or anonymous visitor identifier (Kafka partition key)"},
+    {"name": "client_session_id", "type": "string", "doc": "Browser/app tab session identifier"},
+    {"name": "event_type", "type": "string", "doc": "One of: view, add_to_cart, checkout, purchase"},
+    {"name": "product_id", "type": "string", "doc": "SKU identifier joined temporally against products.catalogue.v1"},
+    {"name": "quantity", "type": "int", "default": 1, "doc": "Item units (>=1 for cart/checkout/purchase)"},
+    {"name": "device", "type": "string", "default": "web", "doc": "Client platform: web, ios, android"},
+    {"name": "page_url", "type": "string", "default": "/", "doc": "Originating storefront route"},
+    {"name": "event_ts_ms", "type": "long", "doc": "Event occurrence timestamp in UTC epoch milliseconds"},
+    {"name": "created_at_ms", "type": "long", "doc": "Producer wall-clock emit timestamp in UTC epoch milliseconds for freshness SLA"},
+    {"name": "is_synthetic_late", "type": "boolean", "default": false, "doc": "True when event_ts_ms was intentionally backdated by chaos/lateness injection"}
+  ]
+}

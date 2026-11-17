@@ -1,0 +1,473 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 10 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT uniqExact(user_id) AS \"Active Users (60s)\" FROM analytics.clicks_enriched FINAL WHERE event_ts >= (SELECT coalesce(max(event_ts), now64(3, 'UTC')) - INTERVAL 60 SECOND FROM analytics.clicks_enriched FINAL)",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Users (60s Window)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "purple", "value": null }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT greatest((SELECT count() FROM analytics.user_sessions FINAL), (SELECT uniqExact(client_session_id) FROM analytics.clicks_enriched FINAL)) AS \"Sessions\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Sessions Tracked",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "dark-green", "value": null }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT toFloat64(coalesce(sum(gross_revenue), 0)) AS \"Revenue / Min\" FROM analytics.clicks_enriched FINAL WHERE event_ts >= (SELECT coalesce(max(event_ts), now64(3, 'UTC')) - INTERVAL 60 SECOND FROM analytics.clicks_enriched FINAL)",
+          "refId": "A"
+        }
+      ],
+      "title": "Revenue / Minute (Temporal Price)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "orange", "value": null },
+              { "color": "green", "value": 5 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT coalesce((SELECT round(sum(step_4_purchases) * 100.0 / nullIf(sum(step_1_views), 0), 2) FROM analytics.funnel_window_metrics FINAL), (SELECT round(uniqExactIf(client_session_id, event_type = 'purchase') * 100.0 / greatest(uniqExactIf(client_session_id, event_type = 'view'), 1), 2) FROM analytics.clicks_enriched FINAL)) AS \"Funnel Conv %\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Funnel Conversion (View → Buy)",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3000 },
+              { "color": "red", "value": 5000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT round(coalesce(quantileTDigest(0.50)(greatest(dateDiff('millisecond', created_at, ch_ingested_at), 1)), 0), 0) AS \"Freshness p50\" FROM analytics.clicks_enriched FINAL WHERE is_synthetic_late = 0 AND ch_ingested_at >= now64(3, 'UTC') - INTERVAL 15 MINUTE",
+          "refId": "A"
+        }
+      ],
+      "title": "End-to-End Freshness p50",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 4000 },
+              { "color": "red", "value": 7000 }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "id": 6,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT round(coalesce(quantileTDigest(0.95)(greatest(dateDiff('millisecond', created_at, ch_ingested_at), 1)), 0), 0) AS \"Freshness p95\" FROM analytics.clicks_enriched FINAL WHERE is_synthetic_late = 0 AND ch_ingested_at >= now64(3, 'UTC') - INTERVAL 15 MINUTE",
+          "refId": "A"
+        }
+      ],
+      "title": "End-to-End Freshness p95",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 65,
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 7,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT toStartOfInterval(event_ts, INTERVAL 10 SECOND) AS time, toFloat64(sum(gross_revenue)) * 6.0 AS \"Annualised to $/min (10s buckets)\", toFloat64(sum(gross_revenue)) AS \"Bucket Gross Revenue ($)\" FROM analytics.clicks_enriched FINAL WHERE $__timeFilter(event_ts) GROUP BY time ORDER BY time ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "Real-Time Revenue Pace ($/min & 10s Slices)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 8,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT toStartOfInterval(event_ts, INTERVAL 5 SECOND) AS time, uniqExact(user_id) AS \"Active Users\", countIf(event_type = 'view') AS \"Views\", countIf(event_type = 'add_to_cart') AS \"Add to Cart\", countIf(event_type = 'checkout') AS \"Checkout\", countIf(event_type = 'purchase') AS \"Purchases\" FROM analytics.clicks_enriched FINAL WHERE $__timeFilter(event_ts) GROUP BY time ORDER BY time ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "Active Users & Clickstream Events by Funnel Stage (5s Resolution)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-GrYlRd" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 7, "x": 0, "y": 12 },
+      "id": 9,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 16,
+        "minVizWidth": 75,
+        "namePlacement": "left",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": true },
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "WITH f AS (SELECT sum(step_1_views) AS s1, sum(step_2_carts) AS s2, sum(step_3_checkouts) AS s3, sum(step_4_purchases) AS s4 FROM analytics.funnel_window_metrics FINAL), live AS (SELECT uniqExactIf(client_session_id, event_type = 'view') AS l1, uniqExactIf(client_session_id, event_type = 'add_to_cart') AS l2, uniqExactIf(client_session_id, event_type = 'checkout') AS l3, uniqExactIf(client_session_id, event_type = 'purchase') AS l4 FROM analytics.clicks_enriched FINAL) SELECT '1. Product View' AS Stage, if((SELECT s1 FROM f) > 0, (SELECT s1 FROM f), (SELECT l1 FROM live)) AS Journeys UNION ALL SELECT '2. Add to Cart', if((SELECT s1 FROM f) > 0, (SELECT s2 FROM f), (SELECT l2 FROM live)) UNION ALL SELECT '3. Checkout', if((SELECT s1 FROM f) > 0, (SELECT s3 FROM f), (SELECT l3 FROM live)) UNION ALL SELECT '4. Purchase', if((SELECT s1 FROM f) > 0, (SELECT s4 FROM f), (SELECT l4 FROM live))",
+          "refId": "A"
+        }
+      ],
+      "title": "4-Step Conversion Funnel (Flink MATCH_RECOGNIZE)",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto" }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 7, "x": 7, "y": 12 },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT formatDateTime(window_start, '%H:%i:%S') AS \"Window\", step_1_views AS \"Views\", step_2_carts AS \"Carts\", round(dropoff_view_to_cart_pct, 1) AS \"Drop V→C %\", step_3_checkouts AS \"Chkout\", round(dropoff_cart_to_checkout_pct, 1) AS \"Drop C→K %\", step_4_purchases AS \"Buy\", round(dropoff_checkout_to_purchase_pct, 1) AS \"Drop K→B %\", round(overall_conversion_pct, 1) AS \"Conv %\" FROM analytics.funnel_window_metrics FINAL ORDER BY window_start DESC LIMIT 8",
+          "refId": "A"
+        }
+      ],
+      "title": "MATCH_RECOGNIZE Funnel Drop-Off per Window",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Revenue ($)" },
+            "properties": [{ "id": "unit", "value": "currencyUSD" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 12 },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT rnk AS \"#\", product_id AS \"SKU\", product_name AS \"Product\", category AS \"Category\", views AS \"Views\", purchases AS \"Orders\", toFloat64(revenue) AS \"Revenue ($)\" FROM analytics.top_products_window FINAL WHERE window_start = (SELECT max(window_start) FROM analytics.top_products_window FINAL) ORDER BY rnk ASC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Top-10 Products in Latest Window (Flink WindowRank)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 20 },
+      "id": 12,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 2,
+          "queryType": "sql",
+          "rawSql": "SELECT window_end AS time, active_users AS \"1m Tumbling Active Users\", purchases AS \"1m Purchases\", toFloat64(gross_revenue) AS \"1m Revenue ($)\" FROM analytics.minute_metrics_tumbling FINAL WHERE $__timeFilter(window_end) ORDER BY time ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "Flink Tumbling 1-Minute Window Aggregates",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto" }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 20 },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
+          "format": 1,
+          "queryType": "sql",
+          "rawSql": "SELECT session_id AS \"Session\", user_id AS \"User\", round(duration_sec, 1) AS \"Dur (s)\", event_count AS \"Events\", distinct_products AS \"SKUs\", if(converted = 1, 'YES', 'NO') AS \"Bought\", primary_device AS \"Device\", job_version AS \"Job Ver\" FROM analytics.user_sessions FINAL ORDER BY session_end DESC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Closed User Sessions (Flink DataStream API + RocksDB)",
+      "type": "table"
+    }
+  ],
+  "refresh": "2s",
+  "schemaVersion": 39,
+  "tags": ["kafka", "flink", "clickhouse", "realtime", "clickstream"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timezone": "utc",
+  "title": "Real-Time E-Commerce Clickstream Analytics",
+  "uid": "clickstream-rt",
+  "version": 1
+}

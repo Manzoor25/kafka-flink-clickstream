@@ -1,0 +1,73 @@
+env:
+  java:
+    opts:
+      all: --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+
+jobmanager:
+  bind-host: 0.0.0.0
+  rpc:
+    address: flink-jobmanager
+    port: 6123
+  memory:
+    process:
+      size: 1280m
+  execution:
+    failover-strategy: region
+
+taskmanager:
+  bind-host: 0.0.0.0
+  numberOfTaskSlots: 4
+  memory:
+    process:
+      size: 1536m
+    managed:
+      fraction: 0.35
+
+parallelism:
+  default: 2
+
+rest:
+  address: flink-jobmanager
+  bind-address: 0.0.0.0
+  port: 8081
+
+heartbeat:
+  interval: 2000
+  timeout: 8000
+
+restart-strategy:
+  type: fixed-delay
+  fixed-delay:
+    attempts: 30
+    delay: 2s
+
+state:
+  backend:
+    type: rocksdb
+
+execution:
+  checkpointing:
+    storage: filesystem
+    dir: s3://flink-state/checkpoints
+    savepoint-dir: s3://flink-state/savepoints
+    incremental: true
+    interval: 2s
+    min-pause: 500ms
+    mode: EXACTLY_ONCE
+    timeout: 2min
+    num-retained: 3
+    externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+
+s3:
+  endpoint: http://minio:9000
+  path:
+    style:
+      access: true
+  access-key: localminio
+  secret-key: localminio123
+
+fs:
+  s3a:
+    connection:
+      ssl:
+        enabled: false

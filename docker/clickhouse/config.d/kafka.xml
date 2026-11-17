@@ -1,0 +1,8 @@
+<clickhouse>
+    <kafka>
+        <!-- Enforce downstream isolation for Flink 2PC transactional sinks -->
+        <isolation_level>read_committed</isolation_level>
+        <auto_offset_reset>earliest</auto_offset_reset>
+        <fetch_wait_max_ms>200</fetch_wait_max_ms>
+    </kafka>
+</clickhouse>

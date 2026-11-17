@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "ProductCatalogue",
+  "namespace": "io.clickstream.avro",
+  "doc": "Versioned product catalogue entry stored in compacted topic products.catalogue.v1.",
+  "fields": [
+    {"name": "product_id", "type": "string", "doc": "Unique SKU identifier (compacted Kafka key)"},
+    {"name": "product_name", "type": "string", "doc": "Human-readable product title"},
+    {"name": "category", "type": "string", "doc": "Merchandising category"},
+    {"name": "price", "type": "double", "doc": "Unit price in USD effective at updated_at_ms"},
+    {"name": "updated_at_ms", "type": "long", "doc": "Effective timestamp of this price/catalogue revision in UTC epoch milliseconds"}
+  ]
+}
