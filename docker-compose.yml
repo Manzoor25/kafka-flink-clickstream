@@ -109,21 +109,23 @@ services:
       - "8085:8080"
     environment:
       QUARKUS_HTTP_PORT: "8080"
-      APICURIO_STORAGE_KIND: mem
+      APICURIO_STORAGE_KIND: sql
+      APICURIO_STORAGE_SQL_KIND: h2
       JAVA_OPTIONS: "-Xms256m -Xmx512m -Dquarkus.http.host=0.0.0.0"
     networks:
       - clickstream-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/apis/ccompat/v7/subjects >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/apis/ccompat/v7/subjects >/dev/null || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 20
-      start_period: 10s
+      start_period: 15s
 
   minio:
     image: alpine/minio:RELEASE.2025-10-15T17-29-55Z
     container_name: minio
     hostname: minio
+    user: "0:0"
     restart: unless-stopped
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
@@ -137,10 +139,11 @@ services:
     networks:
       - clickstream-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/minio/health/live >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/minio/health/live >/dev/null 2>&1 || curl -sf http://127.0.0.1:9000/minio/health/live >/dev/null || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 15
+      start_period: 5s
 
   flink-jobmanager:
     build:
@@ -243,10 +246,11 @@ services:
     networks:
       - clickstream-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping | grep -q Ok"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8123/ping | grep -q Ok"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
 
   grafana:
     build:
@@ -274,10 +278,11 @@ services:
     networks:
       - clickstream-net
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health | grep -q ok"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health | grep -q ok"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 10s
 
 networks:
   clickstream-net:
