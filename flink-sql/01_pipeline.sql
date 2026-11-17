@@ -112,7 +112,7 @@ SELECT
     ROUND(COALESCE(p.price, 0.0), 2) AS unit_price,
     c.quantity,
     CASE
-        WHEN c.event_type = 'purchase' THEN ROUND(COALESCE(p.price, 0.0) * c.quantity, 2)
+        WHEN c.event_type = 'purchase' THEN ROUND(ROUND(COALESCE(p.price, 0.0), 2) * c.quantity, 2)
         ELSE 0.0
     END AS gross_revenue,
     c.device,

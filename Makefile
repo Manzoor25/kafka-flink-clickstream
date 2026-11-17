@@ -46,11 +46,11 @@ demo:
 		--late-rate 0.015 \
 		--flush-watermark \
 		--ledger-path /tmp/demo_ledger.jsonl
-	$(PYTHON) scripts/verify_isolation_level.py --json-out benchmarks/results/isolation_level.json
 	$(PYTHON) scripts/verify_recount.py \
 		--ledger-path /tmp/demo_ledger.jsonl \
 		--exclude-synthetic-late \
 		--json-out benchmarks/results/demo_recount.json
+	$(PYTHON) scripts/verify_isolation_level.py --json-out benchmarks/results/isolation_level.json
 	$(PYTHON) scripts/measure_freshness.py --probes 25
 	$(PYTHON) scripts/monitor_ops.py --json-out benchmarks/results/ops_snapshot.json
 

@@ -35,11 +35,11 @@ SELECT
     client_session_id,
     event_type,
     product_id,
-     coalesce(product_name, 'Unknown') AS product_name,
+    coalesce(product_name, 'Unknown') AS product_name,
     coalesce(category, 'Uncategorized') AS category,
-    toDecimal64(coalesce(unit_price, 0.0), 2) AS unit_price,
+    toDecimal64(round(coalesce(unit_price, 0.0), 2) + 1e-6, 2) AS unit_price,
     quantity,
-    toDecimal64(gross_revenue, 2) AS gross_revenue,
+    toDecimal64(round(gross_revenue, 2) + 1e-6, 2) AS gross_revenue,
     device,
     fromUnixTimestamp64Milli(event_ts_ms, 'UTC') AS event_ts,
     fromUnixTimestamp64Milli(created_at_ms, 'UTC') AS created_at,
@@ -79,7 +79,7 @@ SELECT
     add_to_carts,
     checkouts,
     purchases,
-    toDecimal64(gross_revenue, 2) AS gross_revenue,
+    toDecimal64(round(gross_revenue, 2) + 1e-6, 2) AS gross_revenue,
     now64(3, 'UTC') AS ch_ingested_at
 FROM analytics.kafka_minute_metrics_tumbling;
 
@@ -107,7 +107,7 @@ SELECT
     parseDateTime64BestEffort(window_end, 3, 'UTC') AS window_end,
     active_users_5m,
     purchases_5m,
-    toDecimal64(gross_revenue_5m, 2) AS gross_revenue_5m,
+    toDecimal64(round(gross_revenue_5m, 2) + 1e-6, 2) AS gross_revenue_5m,
     conversion_rate_pct,
     now64(3, 'UTC') AS ch_ingested_at
 FROM analytics.kafka_minute_metrics_hopping;
@@ -184,7 +184,7 @@ SELECT
     duration_sec,
     event_count,
     purchases,
-    toDecimal64(session_revenue, 2) AS session_revenue,
+    toDecimal64(round(session_revenue, 2) + 1e-6, 2) AS session_revenue,
     now64(3, 'UTC') AS ch_ingested_at
 FROM analytics.kafka_user_sessions_sql;
 
@@ -223,7 +223,7 @@ SELECT
     coalesce(dropoff_cart_to_checkout_pct, 0.0) AS dropoff_cart_to_checkout_pct,
     coalesce(dropoff_checkout_to_purchase_pct, 0.0) AS dropoff_checkout_to_purchase_pct,
     coalesce(overall_conversion_pct, 0.0) AS overall_conversion_pct,
-    toDecimal64(funnel_revenue, 2) AS funnel_revenue,
+    toDecimal64(round(funnel_revenue, 2) + 1e-6, 2) AS funnel_revenue,
     now64(3, 'UTC') AS ch_ingested_at
 FROM analytics.kafka_funnel_window_metrics;
 
@@ -258,7 +258,7 @@ SELECT
     category,
     views,
     purchases,
-    toDecimal64(revenue, 2) AS revenue,
+    toDecimal64(round(revenue, 2) + 1e-6, 2) AS revenue,
     now64(3, 'UTC') AS ch_ingested_at
 FROM analytics.kafka_top_products_window;
 
