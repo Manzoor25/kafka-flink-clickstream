@@ -114,7 +114,7 @@ public class SessionAnalyticsJob {
         WatermarkStrategy<ClickEvent> watermarkStrategy = WatermarkStrategy
                 .<ClickEvent>forBoundedOutOfOrderness(Duration.ofSeconds(5))
                 .withTimestampAssigner((event, recordTs) -> event.getEventTsMs())
-                .withIdleness(Duration.ofSeconds(2));
+                .withIdleness(Duration.ofSeconds(30));
 
         DataStream<ClickEvent> sourceStream = env
                 .fromSource(source, watermarkStrategy, "KafkaClicksRawSource")

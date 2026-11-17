@@ -17,7 +17,7 @@
 SET 'pipeline.name' = '${PIPELINE_NAME}';
 SET 'parallelism.default' = '${PARALLELISM}';
 SET 'table.local-time-zone' = 'UTC';
-SET 'table.exec.source.idle-timeout' = '2 s';
+SET 'table.exec.source.idle-timeout' = '30 s';
 SET 'table.exec.state.ttl' = '86400 s';
 
 -- -----------------------------------------------------------------------------

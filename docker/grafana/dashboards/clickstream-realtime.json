@@ -453,7 +453,7 @@
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse-rt" },
           "format": 1,
           "queryType": "sql",
-          "rawSql": "SELECT session_id AS \"Session\", user_id AS \"User\", round(duration_sec, 1) AS \"Dur (s)\", event_count AS \"Events\", distinct_products AS \"SKUs\", if(converted = 1, 'YES', 'NO') AS \"Bought\", primary_device AS \"Device\", job_version AS \"Job Ver\" FROM analytics.user_sessions FINAL ORDER BY session_end DESC LIMIT 10",
+          "rawSql": "SELECT session_id AS \"Session\", user_id AS \"User\", round(duration_sec, 1) AS \"Dur (s)\", event_count AS \"Events\", distinct_products AS \"SKUs\", if(converted = 1, 'YES', 'NO') AS \"Bought\", primary_device AS \"Device\", job_version AS \"Job Ver\" FROM analytics.user_sessions FINAL WHERE user_id NOT LIKE 'canary-%' AND user_id NOT LIKE 'wm-%' ORDER BY session_end DESC LIMIT 10",
           "refId": "A"
         }
       ],
