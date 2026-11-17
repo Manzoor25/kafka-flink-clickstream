@@ -1,0 +1,33 @@
+[project]
+name = "kafka-flink-clickstream"
+version = "1.0.0"
+description = "Real-time e-commerce clickstream analytics on Apache Kafka 4.4 KRaft, Apache Flink 2.2, ClickHouse 25.8, and Grafana 13.2"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+dependencies = [
+    "confluent-kafka==2.16.1",
+    "fastavro==1.13.1",
+    "clickhouse-connect==1.13.0",
+    "boto3==1.44.4",
+    "requests==2.34.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "ruff>=0.9.0",
+    "playwright>=1.50.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 115
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
