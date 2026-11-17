@@ -14,7 +14,7 @@ Two supply-chain constraints surfaced during version verification:
 ## Decision
 
 1. Pin **`flink:2.2.1-scala_2.12-java17`** paired with **`flink-sql-connector-kafka:5.0.0-2.2`** and **`flink-sql-avro-confluent-registry:2.2.1`**.
-2. Configure Flink 2.x standard YAML (`conf/config.yaml`) with `state.backend.type: rocksdb`, `execution.checkpointing.incremental: true`, `execution.checkpointing.mode: EXACTLY_ONCE`, and `ENABLE_BUILT_IN_PLUGINS=flink-s3-fs-hadoop-2.2.1.jar`.
+2. Configure Flink 2.x standard YAML (`conf/config.yaml`) with `state.backend.type: rocksdb`, `execution.checkpointing.incremental: true`, `execution.checkpointing.mode: EXACTLY_ONCE`, `execution.checkpointing.unaligned.enabled: true` with `aligned-checkpoint-timeout: 5s` (FLIP-76), and `ENABLE_BUILT_IN_PLUGINS=flink-s3-fs-hadoop-2.2.1.jar`. Checkpoints stay aligned in steady-state traffic (`< 500 ms` barrier alignment) and automatically switch to unaligned checkpoints if backpressure delays barrier alignment past `5 s` during $10\times$ traffic spikes or full `earliest-offset` Kappa backfills.
 3. Run **1 JobManager + 2 TaskManagers** (6 slots each, 12 total with `cluster.evenly-spread-out-slots: true`, running 2 jobs at `parallelism=3`) so killing one TaskManager under load demonstrates live failover onto surviving standby slots and S3 checkpoint recovery without external cluster autoscaling.
 4. Pin **`alpine/minio:RELEASE.2025-10-15T17-29-55Z`** for local S3 checkpoint/savepoint storage and bootstrap buckets via Python `boto3` (`s3v4` path-style) rather than the removed `minio/mc` image.
 

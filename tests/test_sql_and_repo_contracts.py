@@ -53,3 +53,54 @@ def test_provisioned_grafana_dashboard_schema() -> None:
     for p in panels:
         assert p["datasource"]["uid"] == "clickhouse-rt"
         assert len(p.get("targets", [])) >= 1
+
+
+def test_portfolio_deliverables_and_measured_artifacts_complete() -> None:
+    required_files = [
+        "LICENSE",
+        "README.md",
+        "docs/design.md",
+        "docs/interview-questions.md",
+        "docs/linkedin-article.md",
+        "docs/linkedin-post.md",
+        "docs/assets/dashboard.png",
+        "benchmarks/results/producer_benchmark.json",
+        "benchmarks/results/freshness_report.json",
+        "benchmarks/results/demo_recount.json",
+        "benchmarks/results/isolation_level.json",
+        "benchmarks/results/demo_kill_taskmanager.json",
+        "benchmarks/results/demo_traffic_spike.json",
+        "benchmarks/results/demo_savepoint_upgrade.json",
+        "benchmarks/results/demo_reprocess_earliest.json",
+        "benchmarks/results/demo_reprocess_recount.json",
+    ]
+    for rel in required_files:
+        fp = ROOT / rel
+        assert fp.exists(), f"Missing required deliverable: {rel}"
+
+    assert (ROOT / "docs" / "assets" / "dashboard.png").stat().st_size > 50_000
+    assert len(list((ROOT / "docs" / "adr").glob("000*.md"))) >= 7
+
+    # Ensure zero unfilled template placeholders remain across docs
+    for md_path in [ROOT / "README.md", *(ROOT / "docs").rglob("*.md")]:
+        txt = md_path.read_text(encoding="utf-8")
+        assert "{{MEASURED_" not in txt, f"Unfilled placeholder in {md_path}"
+
+    # Verify 10 interview Q&As
+    iq_headings = re.findall(
+        r"^##\s+\d+\.", (ROOT / "docs" / "interview-questions.md").read_text(encoding="utf-8"), re.M
+    )
+    assert len(iq_headings) == 10
+
+    # Verify LinkedIn article constraints (working title, 900..1200 words, repo link)
+    article = (ROOT / "docs" / "linkedin-article.md").read_text(encoding="utf-8")
+    assert article.startswith("# From click to dashboard in seconds: a real-time analytics stack on Kafka and Flink")
+    assert "https://github.com/Manzoor25/kafka-flink-clickstream" in article
+    word_count = len(article.split())
+    assert 900 <= word_count <= 1200, f"LinkedIn article word count {word_count} outside [900, 1200]"
+
+    # Verify LinkedIn teaser post constraints (<1300 chars, 3..5 hashtags)
+    post = (ROOT / "docs" / "linkedin-post.md").read_text(encoding="utf-8").strip()
+    assert len(post) < 1300, f"LinkedIn post length {len(post)} >= 1300"
+    hashtags = re.findall(r"(?<!\S)#[A-Za-z][A-Za-z0-9_]*", post)
+    assert 3 <= len(hashtags) <= 5, f"Expected 3..5 hashtags, got {hashtags}"
