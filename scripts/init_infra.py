@@ -15,6 +15,7 @@ import io
 import json
 import os
 import struct
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,8 @@ from confluent_kafka import Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 TOPICS: list[dict[str, Any]] = [
     {
@@ -48,6 +51,7 @@ TOPICS: list[dict[str, Any]] = [
             "cleanup.policy": "compact",
             "min.insync.replicas": "2",
             "min.cleanable.dirty.ratio": "0.01",
+            "min.compaction.lag.ms": "3600000",
             "segment.ms": "10000",
             "delete.retention.ms": "60000",
         },

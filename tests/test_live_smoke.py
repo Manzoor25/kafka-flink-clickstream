@@ -30,13 +30,13 @@ def test_kafka_4_kraft_cluster_and_topics() -> None:
         "clicks.raw.v1": 12,
         "products.catalogue.v1": 12,
         "clicks.enriched.v1": 6,
-        "sessions.summary.v1": 6,
-        "sessions.sql.v1": 6,
-        "metrics.minute.tumbling.v1": 3,
-        "metrics.minute.hopping.v1": 3,
-        "metrics.funnel.v1": 3,
-        "metrics.top_products.v1": 3,
-        "clicks.late.v1": 3,
+        "metrics.minute.tumbling.v1": 6,
+        "metrics.minute.hopping.v1": 6,
+        "analytics.sessions.v1": 6,
+        "analytics.sessions.sql.v1": 6,
+        "analytics.funnel.v1": 6,
+        "analytics.top_products.v1": 6,
+        "clicks.late.v1": 6,
     }
     for topic, count in expected_partitions.items():
         assert topic in md.topics, f"Missing Kafka topic {topic}"
@@ -89,7 +89,10 @@ def test_clickhouse_serving_tables_and_grafana_query_api() -> None:
 
     ds_resp = requests.post(
         f"{gf_url}/api/ds/query",
-        auth=("admin", "admin"),
+        auth=(
+            os.getenv("GRAFANA_ADMIN_USER", "admin"),
+            os.getenv("GRAFANA_ADMIN_PASSWORD", "admin_local"),
+        ),
         json={
             "queries": [
                 {

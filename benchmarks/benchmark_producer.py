@@ -15,6 +15,7 @@ import argparse
 import json
 import math
 import os
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -23,9 +24,11 @@ import fastavro
 from confluent_kafka import Producer
 from confluent_kafka.admin import AdminClient, NewTopic
 
-from generator.clickstream_generator import ClickstreamSimulator, encode_confluent_avro
-
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from generator.clickstream_generator import ClickstreamSimulator, encode_confluent_avro  # noqa: E402
 
 BENCH_MATRIX: list[dict[str, Any]] = [
     {"codec": "none", "linger_ms": 0, "batch_size": 16384},

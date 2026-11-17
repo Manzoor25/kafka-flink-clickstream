@@ -15,6 +15,7 @@ import argparse
 import json
 import math
 import os
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -25,9 +26,11 @@ import fastavro
 import requests
 from confluent_kafka import Producer
 
-from generator.clickstream_generator import encode_confluent_avro, lookup_schema_id
-
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from generator.clickstream_generator import encode_confluent_avro, lookup_schema_id  # noqa: E402
 
 
 def percentile(sorted_vals: list[float], pct: float) -> float:
@@ -245,8 +248,14 @@ def main() -> None:
         default=os.getenv("SCHEMA_REGISTRY_URL", "http://localhost:8085/apis/ccompat/v7"),
     )
     p.add_argument("--grafana-url", default=os.getenv("GRAFANA_URL", "http://localhost:3000"))
-    p.add_argument("--grafana-user", default=os.getenv("GF_SECURITY_ADMIN_USER", "admin"))
-    p.add_argument("--grafana-password", default=os.getenv("GF_SECURITY_ADMIN_PASSWORD", "admin"))
+    p.add_argument(
+        "--grafana-user",
+        default=os.getenv("GRAFANA_ADMIN_USER", os.getenv("GF_SECURITY_ADMIN_USER", "admin")),
+    )
+    p.add_argument(
+        "--grafana-password",
+        default=os.getenv("GRAFANA_ADMIN_PASSWORD", os.getenv("GF_SECURITY_ADMIN_PASSWORD", "admin_local")),
+    )
     p.add_argument("--clickhouse-host", default=os.getenv("CLICKHOUSE_HOST", "localhost"))
     p.add_argument("--clickhouse-port", type=int, default=int(os.getenv("CLICKHOUSE_PORT", "8123")))
     p.add_argument("--clickhouse-user", default=os.getenv("CLICKHOUSE_USER", "clickstream"))

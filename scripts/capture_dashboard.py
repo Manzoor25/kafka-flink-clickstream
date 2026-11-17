@@ -17,8 +17,14 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> None:
     p = argparse.ArgumentParser(description="Capture live Grafana clickstream dashboard screenshot")
     p.add_argument("--grafana-url", default=os.getenv("GRAFANA_URL", "http://localhost:3000"))
-    p.add_argument("--user", default=os.getenv("GF_SECURITY_ADMIN_USER", "admin"))
-    p.add_argument("--password", default=os.getenv("GF_SECURITY_ADMIN_PASSWORD", "admin"))
+    p.add_argument(
+        "--user",
+        default=os.getenv("GRAFANA_ADMIN_USER", os.getenv("GF_SECURITY_ADMIN_USER", "admin")),
+    )
+    p.add_argument(
+        "--password",
+        default=os.getenv("GRAFANA_ADMIN_PASSWORD", os.getenv("GF_SECURITY_ADMIN_PASSWORD", "admin_local")),
+    )
     p.add_argument("--out", default=str(ROOT / "docs" / "assets" / "dashboard.png"))
     args = p.parse_args()
 

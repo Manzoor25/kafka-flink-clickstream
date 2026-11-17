@@ -1,5 +1,6 @@
 SHELL := /bin/bash
 PYTHON ?= python3
+export PYTHONPATH := $(CURDIR)
 
 .PHONY: help up down demo test test-unit test-java test-smoke benchmark freshness ops demo-kill-tm demo-spike demo-savepoint demo-reprocess clean
 
@@ -29,7 +30,7 @@ up:
 	$(PYTHON) scripts/deploy_jobs.py
 	@echo ""
 	@echo "Platform ready:"
-	@echo "  Grafana Dashboard : http://localhost:3000/d/clickstream-rt/real-time-e-commerce-clickstream-analytics (admin / admin)"
+	@echo "  Grafana Dashboard : http://localhost:3000/d/clickstream-rt/real-time-e-commerce-clickstream-analytics (admin / admin_local)"
 	@echo "  Flink Web UI      : http://localhost:8081"
 	@echo "  Schema Registry   : http://localhost:8085/apis/ccompat/v7/subjects"
 	@echo "  ClickHouse HTTP   : http://localhost:8123"
