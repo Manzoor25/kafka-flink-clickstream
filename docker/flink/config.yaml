@@ -14,17 +14,20 @@ jobmanager:
   execution:
     failover-strategy: region
 
+cluster:
+  evenly-spread-out-slots: true
+
 taskmanager:
   bind-host: 0.0.0.0
-  numberOfTaskSlots: 4
+  numberOfTaskSlots: 6
   memory:
     process:
-      size: 1536m
+      size: 1792m
     managed:
       fraction: 0.35
 
 parallelism:
-  default: 2
+  default: 3
 
 rest:
   address: flink-jobmanager

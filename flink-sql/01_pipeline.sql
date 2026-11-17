@@ -43,6 +43,7 @@ CREATE TABLE clicks_raw (
     'topic' = 'clicks.raw.v1',
     'properties.bootstrap.servers' = '${KAFKA_BROKERS}',
     'properties.group.id' = '${CONSUMER_GROUP}',
+    'properties.isolation.level' = 'read_committed',
     'scan.startup.mode' = '${SCAN_STARTUP_MODE}',
     'format' = 'avro-confluent',
     'avro-confluent.url' = '${SCHEMA_REGISTRY_URL}'
@@ -61,6 +62,7 @@ CREATE TABLE products_catalogue (
     'connector' = 'upsert-kafka',
     'topic' = 'products.catalogue.v1',
     'properties.bootstrap.servers' = '${KAFKA_BROKERS}',
+    'properties.isolation.level' = 'read_committed',
     'key.format' = 'raw',
     'value.format' = 'avro-confluent',
     'value.avro-confluent.url' = '${SCHEMA_REGISTRY_URL}',
@@ -90,6 +92,7 @@ FROM (
         *,
         ROW_NUMBER() OVER (PARTITION BY event_id ORDER BY proc_time ASC) AS rn
     FROM clicks_raw
+    WHERE event_id NOT LIKE 'wm-flush-%'
 )
 WHERE rn = 1;
 

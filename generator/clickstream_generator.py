@@ -276,9 +276,8 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
             if args.max_events > 0 and total_emitted >= args.max_events:
                 break
 
-            in_spike = (
-                args.spike_after_sec >= 0
-                and args.spike_after_sec <= elapsed < (args.spike_after_sec + args.spike_duration_sec)
+            in_spike = args.spike_after_sec >= 0 and args.spike_after_sec <= elapsed < (
+                args.spike_after_sec + args.spike_duration_sec
             )
             effective_rate = args.rate * (args.spike_multiplier if in_spike else 1.0)
 
@@ -344,6 +343,41 @@ def run_producer(args: argparse.Namespace) -> dict[str, Any]:
             if spent < slice_sec:
                 time.sleep(slice_sec - spent)
 
+        if args.flush_watermark:
+            flush_ts_ms = int(time.time() * 1000) + int(round(args.flush_offset_sec * 1000.0))
+            run_tag = uuid.uuid4().hex[:8]
+            for i in range(36):
+                cat_sentinel = {
+                    "product_id": f"SKU-WM-FLUSH-{i:02d}",
+                    "product_name": "Watermark Carrier",
+                    "category": "Internal",
+                    "price": 0.0,
+                    "updated_at_ms": flush_ts_ms,
+                }
+                producer.produce(
+                    "products.catalogue.v1",
+                    key=cat_sentinel["product_id"].encode("utf-8"),
+                    value=encode_confluent_avro(prod_schema_id, prod_schema, cat_sentinel),
+                )
+                click_sentinel = {
+                    "event_id": f"wm-flush-{run_tag}-{i:02d}",
+                    "user_id": f"wm-user-{i:02d}",
+                    "client_session_id": f"wm-sess-{i:02d}",
+                    "event_type": "view",
+                    "product_id": "SKU-1001",
+                    "quantity": 1,
+                    "device": "web",
+                    "page_url": "/_wm",
+                    "event_ts_ms": flush_ts_ms,
+                    "created_at_ms": int(time.time() * 1000),
+                    "is_synthetic_late": False,
+                }
+                producer.produce(
+                    args.topic,
+                    key=click_sentinel["user_id"].encode("utf-8"),
+                    value=encode_confluent_avro(click_schema_id, click_schema, click_sentinel),
+                )
+
         producer.flush(30)
     finally:
         if ledger_fp:
@@ -391,6 +425,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--batch-size", type=int, default=65536)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--ledger-path", default="", help="Optional JSONL ledger path for deterministic batch recount")
+    p.add_argument("--flush-watermark", action="store_true", help="Advance watermarks across all partitions on exit")
+    p.add_argument(
+        "--flush-offset-sec",
+        type=float,
+        default=5.5,
+        help="Seconds added to wall-clock time on --flush-watermark (default 5.5s)",
+    )
     return p
 
 

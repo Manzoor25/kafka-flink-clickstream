@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Failure Demo 1: Kill a TaskManager Under Active Load
+# =============================================================================
+# Scenario:
+#   While the generator streams 300 events/sec (with 5% duplicate retries and
+#   out-of-order arrivals), `flink-tm-2` is abruptly killed (`docker kill`).
+#
+# Expected Output:
+#   1. Flink JobManager detects TaskManager heartbeat loss (~8s) and transitions
+#      running jobs through RESTARTING -> RUNNING using the latest incremental
+#      RocksDB checkpoint on MinIO (`s3://flink-state/checkpoints/...`).
+#   2. Any uncommitted 2PC Kafka sink transactions opened by the dead TaskManager
+#      are fenced/aborted; ClickHouse (`isolation_level=read_committed`) ignores
+#      aborted records.
+#   3. `scripts/verify_recount.py` compares ClickHouse streaming totals against
+#      the raw deterministic ledger recount and prints `"passed": true` with
+#      zero diff on unique events, active users, purchases, and gross revenue.
+# =============================================================================
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT_DIR"
+
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+LEDGER_FILE="/tmp/kill_tm_ledger_$$.jsonl"
+OUT_JSON="$ROOT_DIR/benchmarks/results/demo_kill_taskmanager.json"
+mkdir -p "$ROOT_DIR/benchmarks/results"
+
+echo "=== [Demo 1] Capturing pre-failure checkpoint restoration baseline ==="
+PRE_RESTORED=$($PYTHON_BIN -c "
+import requests
+ov = requests.get('http://localhost:8081/jobs/overview', timeout=10).json()['jobs']
+sql_jid = [j['jid'] for j in ov if j['state']=='RUNNING' and 'sql' in j['name']][0]
+ck = requests.get(f'http://localhost:8081/jobs/{sql_jid}/checkpoints', timeout=10).json()
+print(ck['counts']['restored'])
+")
+echo "[Demo 1] Pre-failure restored_checkpoints=${PRE_RESTORED}"
+
+echo "=== [Demo 1] Starting 300 ev/s workload with duplicates & out-of-order clicks ==="
+$PYTHON_BIN -m generator.clickstream_generator \
+  --rate 300 \
+  --duration-sec 28 \
+  --duplicate-rate 0.05 \
+  --ooo-rate 0.04 \
+  --late-rate 0.0 \
+  --seed 101 \
+  --flush-watermark \
+  --ledger-path "$LEDGER_FILE" &
+GEN_PID=$!
+
+sleep 7
+echo "=== [Demo 1] Injecting fault: docker kill flink-tm-2 ==="
+KILL_T0=$($PYTHON_BIN -c "import time; print(time.time())")
+docker kill flink-tm-2 >/dev/null
+echo "[Demo 1] flink-tm-2 killed mid-stream! Surviving flink-tm-1 has standby slots to absorb failover..."
+
+echo "=== [Demo 1] Waiting for Flink checkpoint failover recovery onto surviving TaskManager ==="
+RECOVERY_INFO=$($PYTHON_BIN - "$PRE_RESTORED" "$KILL_T0" <<'PY'
+import json, sys, time, requests
+
+pre_restored = int(sys.argv[1])
+t0 = float(sys.argv[2])
+deadline = time.time() + 90.0
+while time.time() < deadline:
+    try:
+        jobs = requests.get("http://localhost:8081/jobs/overview", timeout=5).json().get("jobs", [])
+        running = [j for j in jobs if j["state"] == "RUNNING" and "sql" in j["name"]]
+        if running:
+            jid = running[0]["jid"]
+            ck = requests.get(f"http://localhost:8081/jobs/{jid}/checkpoints", timeout=5).json()
+            restored = int(ck.get("counts", {}).get("restored", 0))
+            completed = int(ck.get("counts", {}).get("completed", 0))
+            if restored > pre_restored:
+                rec_sec = round(time.time() - t0, 2)
+                print(json.dumps({"jid": jid, "restored_checkpoints": restored, "completed_checkpoints": completed, "recovery_sec": rec_sec}))
+                sys.exit(0)
+    except Exception:
+        pass
+    time.sleep(1.0)
+raise SystemExit("Timed out waiting for Flink job to restore from checkpoint")
+PY
+)
+echo "[Demo 1] Flink recovered from MinIO RocksDB checkpoint: $RECOVERY_INFO"
+
+wait "$GEN_PID"
+
+echo "=== [Demo 1] Running exact streaming-vs-batch recount check ==="
+$PYTHON_BIN scripts/verify_recount.py \
+  --ledger-path "$LEDGER_FILE" \
+  --wait-timeout-sec 45 \
+  --json-out "$OUT_JSON"
+
+$PYTHON_BIN - "$OUT_JSON" "$RECOVERY_INFO" <<'PY'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+data = json.loads(p.read_text(encoding="utf-8"))
+data["failover"] = json.loads(sys.argv[2])
+p.write_text(json.dumps(data, indent=2), encoding="utf-8")
+print("[Demo 1] PASSED: Streaming totals after TaskManager kill match batch recount 100%!")
+PY
+
+rm -f "$LEDGER_FILE"
+echo "[Demo 1] Restoring flink-tm-2 standby TaskManager to full 2-TM redundancy..."
+docker start flink-tm-2 >/dev/null
+

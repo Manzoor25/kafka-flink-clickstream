@@ -184,6 +184,9 @@ public class SessionAnalyticsJob {
 
         @Override
         public void processElement(ClickEvent value, Context ctx, Collector<ClickEvent> out) throws Exception {
+            if (value.getEventId() != null && value.getEventId().startsWith("wm-flush-")) {
+                return;
+            }
             if (seenState.value() == null) {
                 seenState.update(Boolean.TRUE);
                 out.collect(value);

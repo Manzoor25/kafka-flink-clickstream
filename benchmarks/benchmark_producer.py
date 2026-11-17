@@ -179,7 +179,8 @@ def run_single_profile(
 
 def format_markdown_table(rows: list[dict[str, Any]]) -> str:
     lines = [
-        "| Codec | `linger.ms` | `batch.size` | Events/sec | Raw MB/s | Wire MB/s | Wire/Raw | ACK p50 (ms) | ACK p95 (ms) |",
+        "| Codec | `linger.ms` | `batch.size` | Events/sec | Raw MB/s | Wire MB/s | Wire/Raw "
+        "| ACK p50 (ms) | ACK p95 (ms) |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for r in rows:

@@ -188,7 +188,7 @@ services:
     command: ["taskmanager"]
     environment:
       JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
-      TASK_MANAGER_NUMBER_OF_TASK_SLOTS: "4"
+      TASK_MANAGER_NUMBER_OF_TASK_SLOTS: "6"
       ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-2.2.1.jar
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-localminio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-localminio123}
@@ -206,7 +206,7 @@ services:
     command: ["taskmanager"]
     environment:
       JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
-      TASK_MANAGER_NUMBER_OF_TASK_SLOTS: "4"
+      TASK_MANAGER_NUMBER_OF_TASK_SLOTS: "6"
       ENABLE_BUILT_IN_PLUGINS: flink-s3-fs-hadoop-2.2.1.jar
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-localminio}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-localminio123}
